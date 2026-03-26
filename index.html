@@ -3,34 +3,26 @@
 <head>
     <title>スプレッドシート連動マップ</title>
     <meta charset="utf-8">
-<style>
-    /* bodyとhtmlの余白をゼロにする */
-    body, html { 
-        margin: 0; 
-        padding: 0; 
-        height: 100%; 
-        width: 100%; 
-    }
-    /* マップを画面の高さ100%にする */
-    #map { 
-        height: 100vh; /* vhは画面の高さに対するパーセント */
-        width: 100%; 
-    }
-</style>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
+        #map { height: 100vh; width: 100%; }
+        /* 吹き出し内のスクロール設定 */
+        .info-container { max-height: 250px; overflow-y: auto; padding: 5px; }
+        .property-item { border-bottom: 1px solid #ccc; padding: 8px 0; }
+        .property-item:last-child { border-bottom: none; }
+    </style>
 </head>
 <body>
-    <h2>マイ・データベース・マップ</h2>
-    <p>スプレッドシートの内容が自動で反映されます。</p>
     <div id="map"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
 
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQH2WhyFZJoWy_pegiP3tfx8169H_cFXOx_91hbOKE0pDG5z_-KpH54UUFSJHPaO21nYLFhGWIlVtDR/pub?gid=0&single=true&output=csv";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxoq3toz_P0yIs__RBfKchgy1NOwt-kmeketlV6q-26FmUPWLSe07bngdKmreXuu_Gz/exec";
 
+      // Google Maps Loader
       (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Re-writing platform key."):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
         key: API_KEY,
         v: "weekly",
@@ -44,121 +36,105 @@
           center: { lat: 35.681, lng: 139.767 },
           zoom: 10,
           mapId: MAP_ID,
-          // --- 常にマウスホイールでズームします。Ctrlキーは不要です。 ---
-          gestureHandling: "greedy", 
-          // ------------------
-        });
-
-// 【修正箇所①】 InfoWindowをループの外側で「1つだけ」作成する
-        const sharedInfoWindow = new InfoWindow();
-
-// ★ ここを追加：地図クリックで閉じる
-        map.addListener("click", () => {
-          sharedInfoWindow.close();
-        });
-
-//-----------------MAP　-　GAS　-　スプレッドシート　の連携ここから　---------------------
-
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxoq3toz_P0yIs__RBfKchgy1NOwt-kmeketlV6q-26FmUPWLSe07bngdKmreXuu_Gz/exec";
-
-      async function initMap() {
-        const { Map, InfoWindow } = await google.maps.importLibrary("maps");
-        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-        
-        const map = new Map(document.getElementById("map"), {
-          center: { lat: 35.681, lng: 139.767 },
-          zoom: 10,
-          mapId: MAP_ID,
           gestureHandling: "greedy",
         });
 
         const sharedInfoWindow = new InfoWindow();
 
-        // --- データ読み込み関数 ---
+        // 地図クリックで吹き出しを閉じる
+        map.addListener("click", () => sharedInfoWindow.close());
+
+        // --- データ読み込みと描画 ---
         async function loadAndDrawMarkers() {
-          const response = await fetch(GAS_URL);
-          const data = await response.json();
+          try {
+            const response = await fetch(GAS_URL);
+            const data = await response.json();
 
-          // 以前作った「座標でグループ化」するロジックをここに適用
-          const groupedData = {};
-          data.forEach(row => {
-            const key = `${row["緯度"]},${row["経度"]}`;
-            if (!groupedData[key]) groupedData[key] = [];
-            groupedData[key].push(row);
-          });
-
-          const markers = Object.keys(groupedData).map(key => {
-            const props = groupedData[key];
-            const [lat, lng] = key.split(",").map(Number);
-            
-            const marker = new AdvancedMarkerElement({ position: { lat, lng }, map: map });
-
-            marker.addListener("click", () => {
-              let html = `<div style="max-height:200px; overflow-y:auto;">`;
-              props.forEach(p => {
-                html += `<div><b>${p["物件名称"]}</b><br>価格:${p["販売価格"]}
-                         <button onclick="editProperty('${p["ID"]}')">編集</button></div><hr>`;
-              });
-              html += `<button onclick="addNewProperty('${lat}','${lng}')">この場所に新しく追加</button></div>`;
-              sharedInfoWindow.setContent(html);
-              sharedInfoWindow.open(map, marker);
+            const groupedData = {};
+            data.forEach(row => {
+              const key = `${row["緯度"]},${row["経度"]}`;
+              if (!groupedData[key]) groupedData[key] = [];
+              groupedData[key].push(row);
             });
-            return marker;
-          });
-          
-          new markerClusterer.MarkerClusterer({ map, markers });
-        }
 
-        loadAndDrawMarkers();
+            const markers = Object.keys(groupedData).map(key => {
+              const props = groupedData[key];
+              const [lat, lng] = key.split(",").map(Number);
+              
+              const marker = new AdvancedMarkerElement({
+                position: { lat, lng },
+                map: map,
+                title: `${props.length}件の物件`
+              });
 
-        // --- 地図クリックで新規追加の準備 ---
-        map.addListener("click", (e) => {
-          const lat = e.latLng.lat();
-          const lng = e.latLng.lng();
-          if(confirm("この場所に新しい物件を追加しますか？")){
-              const name = prompt("物件名を入力してください");
-              if(name) sendDataToGas({ name, lat, lng });
-          }
-        });
-      }
-
-      // --- GASへデータを送る関数 ---
-      async function sendDataToGas(data) {
-        await fetch(GAS_URL, {
-          method: "POST",
-          body: JSON.stringify(data)
-        });
-        location.reload(); // 反映のためにリロード
-      }
-
-//-----------------MAP　-　GAS　-　スプレッドシート　の連携ここまで　---------------------
-
-
-              // 【修正箇所②】 クリック時の処理を「共有の窓」を使うように変更
               marker.addListener("click", () => {
-                // 1. 共有の窓の中身を、今クリックされた行のデータに書き換える
-                sharedInfoWindow.setContent(`
-                  <div class="info-window">
-                    <strong style="font-size:1.2em;">${row["物件名称"]}</strong><br>
-                    <b>業者名:</b> ${row["業者名"] || ""}<br>
-                    <b>価格:</b> ${row["販売価格"] || ""}<br>
-                    ${row["URL"] ? `<a href="${row["URL"]}" target="_blank">詳細リンク</a>` : ""}
+                let html = `<div class="info-container">`;
+                props.forEach(p => {
+                  html += `
+                    <div class="property-item">
+                      <strong style="font-size:1.1em;">${p["物件名称"]}</strong><br>
+                      価格: ${p["販売価格"] || "未定"}<br>
+                      業者: ${p["業者名"] || ""}<br>
+                      ${p["URL"] ? `<a href="${p["URL"]}" target="_blank">詳細リンク</a>` : ""}
+                    </div>`;
+                });
+                html += `
+                  <div style="margin-top:10px;">
+                    <button onclick="addNewProperty(${lat}, ${lng})">この場所に新規追加</button>
                   </div>
-                `);
+                </div>`;
                 
-                // 2. 共有の窓を開く（この時、他で開いていた窓は自動的に閉じます）
+                sharedInfoWindow.setContent(html);
                 sharedInfoWindow.open(map, marker);
               });
-
               return marker;
-            }).filter(m => m !== null);
+            });
 
-            // 2. クラスター化して地図に表示
             new markerClusterer.MarkerClusterer({ map, markers });
+          } catch (e) {
+            console.error("データ読み込みエラー:", e);
           }
+        }
+
+        // 初回読み込み
+        loadAndDrawMarkers();
+
+        // 地図を「長押し」またはクリックで新規地点追加のトリガー（簡易版）
+        map.addListener("dblclick", (e) => {
+          const lat = e.latLng.lat();
+          const lng = e.latLng.lng();
+          addNewProperty(lat, lng);
         });
       }
 
+      // --- グローバル関数（HTML内のボタンから呼び出すため） ---
+      window.addNewProperty = function(lat, lng) {
+        const name = prompt("新しい物件名を入力してください");
+        if (name) {
+          sendDataToGas({
+            name: name,
+            lat: lat,
+            lng: lng,
+            price: "相談",
+            type: "新着"
+          });
+        }
+      };
+
+      async function sendDataToGas(data) {
+        try {
+          await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify(data)
+          });
+          alert("保存しました。最新情報を読み込みます。");
+          location.reload();
+        } catch (e) {
+          alert("保存に失敗しました。GASの設定を確認してください。");
+        }
+      }
+
+      // 実行
       initMap();
     </script>
 </body>
