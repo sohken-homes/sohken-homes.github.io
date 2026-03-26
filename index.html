@@ -52,19 +52,87 @@
 // 【修正箇所①】 InfoWindowをループの外側で「1つだけ」作成する
         const sharedInfoWindow = new InfoWindow();
 
-        Papa.parse(CSV_URL, {
-          download: true,
-          header: true,
-          complete: function(results) {
-            const markers = results.data.map(row => {
-              const lat = parseFloat(row["緯度"]);
-              const lng = parseFloat(row["経度"]);
-              if (isNaN(lat) || isNaN(lng)) return null;
+// ★ ここを追加：地図クリックで閉じる
+        map.addListener("click", () => {
+          sharedInfoWindow.close();
+        });
 
-              const marker = new AdvancedMarkerElement({
-                position: { lat, lng },
-                title: row["物件名称"],
+//-----------------MAP　-　GAS　-　スプレッドシート　の連携ここから　---------------------
+
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxoq3toz_P0yIs__RBfKchgy1NOwt-kmeketlV6q-26FmUPWLSe07bngdKmreXuu_Gz/exec";
+
+      async function initMap() {
+        const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+        
+        const map = new Map(document.getElementById("map"), {
+          center: { lat: 35.681, lng: 139.767 },
+          zoom: 10,
+          mapId: MAP_ID,
+          gestureHandling: "greedy",
+        });
+
+        const sharedInfoWindow = new InfoWindow();
+
+        // --- データ読み込み関数 ---
+        async function loadAndDrawMarkers() {
+          const response = await fetch(GAS_URL);
+          const data = await response.json();
+
+          // 以前作った「座標でグループ化」するロジックをここに適用
+          const groupedData = {};
+          data.forEach(row => {
+            const key = `${row["緯度"]},${row["経度"]}`;
+            if (!groupedData[key]) groupedData[key] = [];
+            groupedData[key].push(row);
+          });
+
+          const markers = Object.keys(groupedData).map(key => {
+            const props = groupedData[key];
+            const [lat, lng] = key.split(",").map(Number);
+            
+            const marker = new AdvancedMarkerElement({ position: { lat, lng }, map: map });
+
+            marker.addListener("click", () => {
+              let html = `<div style="max-height:200px; overflow-y:auto;">`;
+              props.forEach(p => {
+                html += `<div><b>${p["物件名称"]}</b><br>価格:${p["販売価格"]}
+                         <button onclick="editProperty('${p["ID"]}')">編集</button></div><hr>`;
               });
+              html += `<button onclick="addNewProperty('${lat}','${lng}')">この場所に新しく追加</button></div>`;
+              sharedInfoWindow.setContent(html);
+              sharedInfoWindow.open(map, marker);
+            });
+            return marker;
+          });
+          
+          new markerClusterer.MarkerClusterer({ map, markers });
+        }
+
+        loadAndDrawMarkers();
+
+        // --- 地図クリックで新規追加の準備 ---
+        map.addListener("click", (e) => {
+          const lat = e.latLng.lat();
+          const lng = e.latLng.lng();
+          if(confirm("この場所に新しい物件を追加しますか？")){
+              const name = prompt("物件名を入力してください");
+              if(name) sendDataToGas({ name, lat, lng });
+          }
+        });
+      }
+
+      // --- GASへデータを送る関数 ---
+      async function sendDataToGas(data) {
+        await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(data)
+        });
+        location.reload(); // 反映のためにリロード
+      }
+
+//-----------------MAP　-　GAS　-　スプレッドシート　の連携ここまで　---------------------
+
 
               // 【修正箇所②】 クリック時の処理を「共有の窓」を使うように変更
               marker.addListener("click", () => {
