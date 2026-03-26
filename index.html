@@ -3,12 +3,20 @@
 <head>
     <title>スプレッドシート連動マップ</title>
     <meta charset="utf-8">
-    <style>
-        #map { height: 100vh; width: 100%; border-radius: 8px; }
-        body { font-family: "Helvetica Neue", Arial, sans-serif; margin: 20px; color: #333; }
-        .info-window { padding: 10px; min-width: 250px; line-height: 1.6; }
-        .info-window b { color: #1a73e8; }
-    </style>
+<style>
+    /* bodyとhtmlの余白をゼロにする */
+    body, html { 
+        margin: 0; 
+        padding: 0; 
+        height: 100%; 
+        width: 100%; 
+    }
+    /* マップを画面の高さ100%にする */
+    #map { 
+        height: 100vh; /* vhは画面の高さに対するパーセント */
+        width: 100%; 
+    }
+</style>
 </head>
 <body>
     <h2>マイ・データベース・マップ</h2>
