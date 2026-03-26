@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>スプレッドシート連動マップ</title>
+    <meta charset="utf-8">
+    <style>
+        #map { height: 600px; width: 100%; border-radius: 8px; }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; margin: 20px; color: #333; }
+        .info-window { padding: 10px; min-width: 250px; line-height: 1.6; }
+        .info-window b { color: #1a73e8; }
+    </style>
+</head>
+<body>
+    <h2>マイ・データベース・マップ</h2>
+    <p>スプレッドシートの内容が自動で反映されます。</p>
+    <div id="map"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+
+    <script>
+      const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
+      const MAP_ID = "972a8c0d85fc17958d06f4b1";
+      const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQH2WhyFZJoWy_pegiP3tfx8169H_cFXOx_91hbOKE0pDG5z_-KpH54UUFSJHPaO21nYLFhGWIlVtDR/pub?gid=0&single=true&output=csv";
+
+      (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Re-writing platform key."):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+        key: API_KEY,
+        v: "weekly",
+      });
+
+      async function initMap() {
+        const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+        const map = new Map(document.getElementById("map"), {
+          center: { lat: 35.681, lng: 139.767 },
+          zoom: 10,
+          mapId: MAP_ID,
+        });
+
+        Papa.parse(CSV_URL, {
+          download: true,
+          header: true,
+          complete: function(results) {
+            // 1. マーカーの配列を作成
+            const markers = results.data.map(row => {
+              const name = row["物件名称"];
+              const lat = parseFloat(row["緯度"]);
+              const lng = parseFloat(row["経度"]);
+              
+              if (isNaN(lat) || isNaN(lng)) return null;
+
+              const marker = new AdvancedMarkerElement({
+                position: { lat, lng },
+                title: name,
+              });
+
+              const infoWindow = new InfoWindow({
+                content: `
+                  <div class="info-window">
+                    <strong style="font-size:1.2em;">${name}</strong><br>
+                    <b>業者名:</b> ${row["業者名"] || ""}<br>
+                    <b>種別:</b> ${row["物件種別"] || ""}<br>
+                    <b>価格:</b> ${row["販売価格"] || ""}<br>
+                    <b>面積:</b> ${row["面積"] || ""}<br>
+                    <b>交通:</b> ${row["交通"] || ""}<br>
+                    <b>説明:</b> ${row["説明など"] || ""}<br>
+                    ${row["URL"] ? `<a href="${row["URL"]}" target="_blank">詳細リンク</a>` : ""}
+                  </div>`
+              });
+
+              marker.addListener("click", () => {
+                infoWindow.open(map, marker);
+              });
+
+              return marker;
+            }).filter(m => m !== null);
+
+            // 2. クラスター化して地図に表示
+            new markerClusterer.MarkerClusterer({ map, markers });
+          }
+        });
+      }
+
+      initMap();
+    </script>
+</body>
+</html>
