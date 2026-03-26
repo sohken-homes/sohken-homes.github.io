@@ -49,39 +49,37 @@
           // ------------------
         });
 
+// 【修正箇所①】 InfoWindowをループの外側で「1つだけ」作成する
+        const sharedInfoWindow = new InfoWindow();
+
         Papa.parse(CSV_URL, {
           download: true,
           header: true,
           complete: function(results) {
-            // 1. マーカーの配列を作成
             const markers = results.data.map(row => {
-              const name = row["物件名称"];
               const lat = parseFloat(row["緯度"]);
               const lng = parseFloat(row["経度"]);
-              
               if (isNaN(lat) || isNaN(lng)) return null;
 
               const marker = new AdvancedMarkerElement({
                 position: { lat, lng },
-                title: name,
+                title: row["物件名称"],
               });
 
-              const infoWindow = new InfoWindow({
-                content: `
-                  <div class="info-window">
-                    <strong style="font-size:1.2em;">${name}</strong><br>
-                    <b>業者名:</b> ${row["業者名"] || ""}<br>
-                    <b>種別:</b> ${row["物件種別"] || ""}<br>
-                    <b>価格:</b> ${row["販売価格"] || ""}<br>
-                    <b>面積:</b> ${row["面積"] || ""}<br>
-                    <b>交通:</b> ${row["交通"] || ""}<br>
-                    <b>説明:</b> ${row["説明など"] || ""}<br>
-                    ${row["URL"] ? `<a href="${row["URL"]}" target="_blank">詳細リンク</a>` : ""}
-                  </div>`
-              });
-
+              // 【修正箇所②】 クリック時の処理を「共有の窓」を使うように変更
               marker.addListener("click", () => {
-                infoWindow.open(map, marker);
+                // 1. 共有の窓の中身を、今クリックされた行のデータに書き換える
+                sharedInfoWindow.setContent(`
+                  <div class="info-window">
+                    <strong style="font-size:1.2em;">${row["物件名称"]}</strong><br>
+                    <b>業者名:</b> ${row["業者名"] || ""}<br>
+                    <b>価格:</b> ${row["販売価格"] || ""}<br>
+                    ${row["URL"] ? `<a href="${row["URL"]}" target="_blank">詳細リンク</a>` : ""}
+                  </div>
+                `);
+                
+                // 2. 共有の窓を開く（この時、他で開いていた窓は自動的に閉じます）
+                sharedInfoWindow.open(map, marker);
               });
 
               return marker;
