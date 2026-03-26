@@ -1,140 +1,246 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>スプレッドシート連動マップ</title>
+    <title>不動産管理・価格推移マップ</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: "Hiragino Sans", "Meiryo", sans-serif; background: #f0f2f5; }
         #map { height: 100vh; width: 100%; }
-        /* 吹き出し内のスクロール設定 */
-        .info-container { max-height: 250px; overflow-y: auto; padding: 5px; }
-        .property-item { border-bottom: 1px solid #ccc; padding: 8px 0; }
-        .property-item:last-child { border-bottom: none; }
+
+        /* 入力パネルのスタイル */
+        #editor-panel {
+            display: none; position: fixed; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 340px;
+            max-height: 90vh; overflow-y: auto;
+        }
+        #editor-panel h3 { margin: 0 0 15px 0; font-size: 18px; color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 8px; }
+        .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 11px; color: #666; margin-bottom: 3px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        .flex-row { display: flex; gap: 8px; }
+        
+        .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; transition: 0.2s; }
+        .btn-save:hover { background: #1557b0; }
+        .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
+
+        /* 吹き出し（InfoWindow）のスタイル */
+        .info-container { min-width: 280px; line-height: 1.6; }
+        .info-title { font-size: 17px; font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .price-history { background: #fff1f0; padding: 10px; border-radius: 6px; border: 1px solid #ffa39e; margin-bottom: 12px; }
+        .price-label { font-size: 10px; color: #cf1322; font-weight: bold; display: block; }
+        .price-chain { font-size: 14px; color: #d93025; font-weight: bold; word-break: break-all; }
+        .info-row { display: flex; font-size: 13px; border-bottom: 1px solid #f9f9f9; padding: 4px 0; }
+        .info-label { width: 75px; color: #888; flex-shrink: 0; font-weight: 600; }
+        .info-val { color: #444; }
+        .btn-edit-trigger { background: #1a73e8; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; cursor: pointer; margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
+
+    <div id="editor-panel">
+        <h3>物件情報の登録・編集</h3>
+        <input type="hidden" id="form-id">
+        <input type="hidden" id="form-lat">
+        <input type="hidden" id="form-lng">
+
+        <div class="section-title">基本情報</div>
+        <div class="form-group"><label>物件種別</label>
+            <select id="form-type"><option value="土地">土地</option><option value="戸建">戸建</option><option value="マンション">マンション</option></select>
+        </div>
+        <div class="form-group"><label>区画名（物件名称）</label><input type="text" id="form-name"></div>
+        <div class="form-group"><label>市・区</label><input type="text" id="form-addr1" placeholder="例：杉並区"></div>
+        <div class="form-group"><label>所在（丁目まで）</label><input type="text" id="form-addr2" placeholder="例：阿佐谷南3丁目"></div>
+        <div class="form-group"><label>住居表示（以降）</label><input type="text" id="form-addr3" placeholder="例：12-3"></div>
+
+        <div class="section-title">価格推移（万円）</div>
+        <div class="form-group"><label>初回入力価格</label><input type="number" id="form-p-first"></div>
+        <div class="form-group"><label>変更1（日付 / 価格）</label>
+            <div class="flex-row"><input type="text" id="form-d-c1" placeholder="3/26"><input type="number" id="form-p-c1"></div>
+        </div>
+        <div class="form-group"><label>変更2（日付 / 価格）</label>
+            <div class="flex-row"><input type="text" id="form-d-c2" placeholder="4/10"><input type="number" id="form-p-c2"></div>
+        </div>
+        <div class="form-group"><label>成約（日付 / 価格）</label>
+            <div class="flex-row"><input type="text" id="form-d-s" placeholder="5/1"><input type="number" id="form-p-s"></div>
+        </div>
+
+        <div class="section-title">面積詳細</div>
+        <div class="form-group"><label>土地面積（㎡ / 坪）</label>
+            <div class="flex-row"><input type="text" id="form-t-m2"><input type="text" id="form-t-tsubo"></div>
+        </div>
+        <div class="form-group"><label>建物面積（㎡ / 坪）</label>
+            <div class="flex-row"><input type="text" id="form-b-m2"><input type="text" id="form-b-tsubo"></div>
+        </div>
+        <div class="form-group"><label>間取り</label><input type="text" id="form-layout" placeholder="4LDK"></div>
+
+        <button class="btn-save" onclick="submitForm()">この内容で保存する</button>
+        <button class="btn-cancel" onclick="closePanel()">キャンセル</button>
+    </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
 
     <script>
+      // 設定値
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbwnYfMYd8OVCKuCNUWKkUGnPOdPfZwFRNb-LYgfWr19DKvRPBsLGLCvWkxvGzOyR77j/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxoq3toz_P0yIs__RBfKchgy1NOwt-kmeketlV6q-26FmUPWLSe07bngdKmreXuu_Gz/exec";
 
-      // Google Maps Loader
+      // Google Maps 加込
       (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Re-writing platform key."):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
         key: API_KEY,
         v: "weekly",
       });
 
+      let map, sharedInfoWindow, allData = [];
+
       async function initMap() {
         const { Map, InfoWindow } = await google.maps.importLibrary("maps");
-        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-
-        const map = new Map(document.getElementById("map"), {
-          center: { lat: 35.681, lng: 139.767 },
-          zoom: 10,
+        map = new Map(document.getElementById("map"), {
+          center: { lat: 35.700, lng: 139.630 },
+          zoom: 14,
           mapId: MAP_ID,
           gestureHandling: "greedy",
+          disableDoubleClickZoom: true
         });
+        sharedInfoWindow = new InfoWindow();
 
-        const sharedInfoWindow = new InfoWindow();
+        map.addListener("click", () => { sharedInfoWindow.close(); closePanel(); });
+        map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
 
-        // 地図クリックで吹き出しを閉じる
-        map.addListener("click", () => sharedInfoWindow.close());
-
-        // --- データ読み込みと描画 ---
-        async function loadAndDrawMarkers() {
-          try {
-            const response = await fetch(GAS_URL);
-            const data = await response.json();
-
-            const groupedData = {};
-            data.forEach(row => {
-              const key = `${row["緯度"]},${row["経度"]}`;
-              if (!groupedData[key]) groupedData[key] = [];
-              groupedData[key].push(row);
-            });
-
-            const markers = Object.keys(groupedData).map(key => {
-              const props = groupedData[key];
-              const [lat, lng] = key.split(",").map(Number);
-              
-              const marker = new AdvancedMarkerElement({
-                position: { lat, lng },
-                map: map,
-                title: `${props.length}件の物件`
-              });
-
-              marker.addListener("click", () => {
-                let html = `<div class="info-container">`;
-                props.forEach(p => {
-                  html += `
-                    <div class="property-item">
-                      <strong style="font-size:1.1em;">${p["物件名称"]}</strong><br>
-                      価格: ${p["販売価格"] || "未定"}<br>
-                      業者: ${p["業者名"] || ""}<br>
-                      ${p["URL"] ? `<a href="${p["URL"]}" target="_blank">詳細リンク</a>` : ""}
-                    </div>`;
-                });
-                html += `
-                  <div style="margin-top:10px;">
-                    <button onclick="addNewProperty(${lat}, ${lng})">この場所に新規追加</button>
-                  </div>
-                </div>`;
-                
-                sharedInfoWindow.setContent(html);
-                sharedInfoWindow.open(map, marker);
-              });
-              return marker;
-            });
-
-            new markerClusterer.MarkerClusterer({ map, markers });
-          } catch (e) {
-            console.error("データ読み込みエラー:", e);
-          }
-        }
-
-        // 初回読み込み
-        loadAndDrawMarkers();
-
-        // 地図を「長押し」またはクリックで新規地点追加のトリガー（簡易版）
-        map.addListener("dblclick", (e) => {
-          const lat = e.latLng.lat();
-          const lng = e.latLng.lng();
-          addNewProperty(lat, lng);
-        });
+        loadMarkers();
       }
 
-      // --- グローバル関数（HTML内のボタンから呼び出すため） ---
-      window.addNewProperty = function(lat, lng) {
-        const name = prompt("新しい物件名を入力してください");
-        if (name) {
-          sendDataToGas({
-            name: name,
-            lat: lat,
-            lng: lng,
-            price: "相談",
-            type: "新着"
-          });
+      async function loadMarkers() {
+        try {
+            const res = await fetch(GAS_URL);
+            allData = await res.json();
+
+            const markers = allData.map(row => {
+                if (!row["緯度"] || !row["経度"]) return null;
+                
+                const marker = new google.maps.marker.AdvancedMarkerElement({
+                    position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) },
+                    map: map
+                });
+
+                marker.addListener("click", () => {
+                    const addr = `${row["市・区"] || ""}${row["所在（丁目まで）"] || ""}${row["住居表示（丁目以降）"] || ""}`;
+                    const tochi = `${row["地積（㎡）"] || "-"}㎡ / ${row["地積（坪）"] || "-"}坪`;
+                    const tatemono = `${row["床面積（㎡）・車庫込"] || "-"}㎡ / ${row["床面積（坪）・車庫込"] || "-"}坪 / ${row["建売の場合の間取り（nLDK）"] || "-"}`;
+                    
+                    // 価格チェーンの作成
+                    let chain = `${row["販売価格（初回入力時/万円）"] || "-"}`;
+                    if (row["変更価格１（万円）"]) chain += ` → ${row["変更価格１（万円）"]}(${row["変更日１"] || ""})`;
+                    if (row["変更価格２（万円）"]) chain += ` → ${row["変更価格２（万円）"]}(${row["変更日２"] || ""})`;
+                    if (row["成約価格（万円）"]) chain += ` → <b style="color:#1a73e8;">${row["成約価格（万円）"]}</b>(${row["成約日"] || ""})`;
+
+                    let html = `
+                    <div class="info-container">
+                        <div class="info-title">${row["区画名"] || "名称未設定"}</div>
+                        <div class="price-history">
+                            <span class="price-label">価格推移 (万円)</span>
+                            <span class="price-chain">${chain}</span>
+                        </div>
+                        <div class="info-row"><span class="info-label">住所</span><span class="info-val">${addr}</span></div>
+                        <div class="info-row"><span class="info-label">土地</span><span class="info-val">${tochi}</span></div>
+                        <div class="info-row"><span class="info-label">建物</span><span class="info-val">${tatemono}</span></div>
+                        <div class="info-row"><span class="info-label">種別</span><span class="info-val">${row["物件種別"] || "-"}</span></div>
+                        <button class="btn-edit-trigger" onclick="openEdit('${row["ID"]}')">詳細・編集</button>
+                    </div>`;
+                    sharedInfoWindow.setContent(html);
+                    sharedInfoWindow.open(map, marker);
+                });
+                return marker;
+            }).filter(m => m !== null);
+
+            new markerClusterer.MarkerClusterer({ map, markers });
+        } catch (e) { console.error("データ読み込み失敗", e); }
+      }
+
+      window.closePanel = () => document.getElementById("editor-panel").style.display = "none";
+
+      window.addNewProperty = (lat, lng) => {
+        document.getElementById("form-id").value = "";
+        document.getElementById("form-lat").value = lat;
+        document.getElementById("form-lng").value = lng;
+        // フォームリセット
+        ["form-name","form-addr1","form-addr2","form-addr3","form-p-first","form-p-c1","form-d-c1","form-p-c2","form-d-c2","form-p-s","form-d-s","form-t-m2","form-t-tsubo","form-b-m2","form-b-tsubo","form-layout"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("editor-panel").style.display = "block";
+      };
+
+      window.openEdit = (id) => {
+        const row = allData.find(d => d["ID"] == id);
+        if (!row) return;
+
+        document.getElementById("form-id").value = row["ID"];
+        document.getElementById("form-lat").value = row["緯度"];
+        document.getElementById("form-lng").value = row["経度"];
+        document.getElementById("form-type").value = row["物件種別"];
+        document.getElementById("form-name").value = row["区画名"] || "";
+        document.getElementById("form-addr1").value = row["市・区"] || "";
+        document.getElementById("form-addr2").value = row["所在（丁目まで）"] || "";
+        document.getElementById("form-addr3").value = row["住居表示（丁目以降）"] || "";
+        document.getElementById("form-p-first").value = row["販売価格（初回入力時/万円）"] || "";
+        document.getElementById("form-p-c1").value = row["変更価格１（万円）"] || "";
+        document.getElementById("form-d-c1").value = row["変更日１"] || "";
+        document.getElementById("form-p-c2").value = row["変更価格２（万円）"] || "";
+        document.getElementById("form-d-c2").value = row["変更日２"] || "";
+        document.getElementById("form-p-s").value = row["成約価格（万円）"] || "";
+        document.getElementById("form-d-s").value = row["成約日"] || "";
+        document.getElementById("form-t-m2").value = row["地積（㎡）"] || "";
+        document.getElementById("form-t-tsubo").value = row["地積（坪）"] || "";
+        document.getElementById("form-b-m2").value = row["床面積（㎡）・車庫込"] || "";
+        document.getElementById("form-b-tsubo").value = row["床面積（坪）・車庫込"] || "";
+        document.getElementById("form-layout").value = row["建売の場合の間取り（nLDK）"] || "";
+
+        document.getElementById("editor-panel").style.display = "block";
+        sharedInfoWindow.close();
+      };
+
+      window.submitForm = async () => {
+        const data = {
+          id: document.getElementById("form-id").value,
+          type: document.getElementById("form-type").value,
+          name: document.getElementById("form-name").value,
+          addr1: document.getElementById("form-addr1").value,
+          addr2: document.getElementById("form-addr2").value,
+          addr3: document.getElementById("form-addr3").value,
+          p_first: document.getElementById("form-p-first").value,
+          p_c1: document.getElementById("form-p-c1").value,
+          d_c1: document.getElementById("form-d-c1").value,
+          p_c2: document.getElementById("form-p-c2").value,
+          d_c2: document.getElementById("form-d-c2").value,
+          p_s: document.getElementById("form-p-s").value,
+          d_s: document.getElementById("form-d-s").value,
+          t_m2: document.getElementById("form-t-m2").value,
+          t_tsubo: document.getElementById("form-t-tsubo").value,
+          b_m2: document.getElementById("form-b-m2").value,
+          b_tsubo: document.getElementById("form-b-tsubo").value,
+          layout: document.getElementById("form-layout").value,
+          lat: document.getElementById("form-lat").value,
+          lng: document.getElementById("form-lng").value
+        };
+
+        const btn = document.querySelector(".btn-save");
+        btn.innerText = "保存中...";
+        btn.disabled = true;
+
+        try {
+            await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
+            alert("保存しました。");
+            location.reload();
+        } catch (e) {
+            alert("エラーが発生しました");
+            btn.innerText = "この内容で保存する";
+            btn.disabled = false;
         }
       };
 
-      async function sendDataToGas(data) {
-        try {
-          await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify(data)
-          });
-          alert("保存しました。最新情報を読み込みます。");
-          location.reload();
-        } catch (e) {
-          alert("保存に失敗しました。GASの設定を確認してください。");
-        }
-      }
-
-      // 実行
       initMap();
     </script>
 </body>
