@@ -44,6 +44,9 @@
           center: { lat: 35.681, lng: 139.767 },
           zoom: 10,
           mapId: MAP_ID,
+          // --- 常にマウスホイールでズームします。Ctrlキーは不要です。 ---
+          gestureHandling: "greedy", 
+          // ------------------
         });
 
         Papa.parse(CSV_URL, {
