@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.4.1</title>
+    <title>不動産管理マップ v4.5.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -24,7 +24,7 @@
         .flex-item { flex: 1; }
         
         .price-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 5px; }
-        .col-date { flex: 0 0 110px; } /* yyyy/mm/dd 用に少し幅を広げました */
+        .col-date { flex: 0 0 110px; }
         .col-price { flex: 1; }
         .col-sold-check { flex: 0 0 50px; text-align: center; }
 
@@ -190,15 +190,10 @@
       let markersList = [];
       let geocoder;
 
-      // --- 日付ロジックの修正 ---
       function formatToFullDate(val) {
           if (!val) return "";
           let input = val.toString().trim();
-          // すでに yyyy/mm/dd 形式(4桁開始)ならそのまま（ただし / を整形）
-          if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(input)) {
-              return input; 
-          }
-          // mm/dd 形式なら今年の年を付与
+          if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(input)) return input; 
           if (/^\d{1,2}\/\d{1,2}$/.test(input)) {
               const currentYear = new Date().getFullYear();
               const [m, d] = input.split("/");
@@ -227,29 +222,47 @@
         loadMarkers();
       }
 
+      // --- ご提案いただいた新住所ロジックの実装 ---
       async function fetchAddressAndFill(lat, lng) {
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
           if (status === "OK" && results[0]) {
             let fullAddress = results[0].formatted_address;
+            
+            // 1. 市区（区・市・郡）を抽出
+            // 「日本、〒...」を除去し、都道府県の次から開始
             let cleanAddress = fullAddress.replace(/^.*?[都道府県]/, ""); 
             let cityMatch = cleanAddress.match(/^.*?[市区郡]/);
             let city = cityMatch ? cityMatch[0] : "";
-            let remaining = cleanAddress.replace(city, "").trim();
-            let chomeMatch = remaining.match(/^.*?\d+丁目/);
-            let chome = ""; let after = "";
-            if (chomeMatch) {
-              chome = chomeMatch[0];
-              after = remaining.replace(chome, "").trim();
+            
+            // 市区より後ろの文字列
+            let afterCity = cleanAddress.replace(city, "").trim();
+
+            let chome = "";
+            let remaining = "";
+
+            // 2. 丁目（または地名）を抽出
+            // 市区以降に「丁目」という文字があるか？
+            let chomeIndex = afterCity.indexOf("丁目");
+            if (chomeIndex !== -1) {
+              // 「丁目」がある場合、そこまでを「丁目」欄に
+              chome = afterCity.substring(0, chomeIndex + 2);
+              remaining = afterCity.substring(chomeIndex + 2).trim();
             } else {
-              let numStartMatch = remaining.match(/\d/);
-              if (numStartMatch) {
-                chome = remaining.substring(0, numStartMatch.index);
-                after = remaining.substring(numStartMatch.index);
-              } else { chome = remaining; }
+              // 「丁目」がない場合、最初に現れる「数字」を探す
+              let numMatch = afterCity.match(/\d/);
+              if (numMatch) {
+                // 数字より前を「丁目（地名）」に、数字以降を「以降」に
+                chome = afterCity.substring(0, numMatch.index).trim();
+                remaining = afterCity.substring(numMatch.index).trim();
+              } else {
+                // 数字もなければ全部「丁目」へ
+                chome = afterCity;
+              }
             }
+
             document.getElementById("form-addr1").value = city;
             document.getElementById("form-addr2").value = chome;
-            document.getElementById("form-addr3").value = after;
+            document.getElementById("form-addr3").value = remaining;
           }
         });
       }
@@ -421,18 +434,13 @@
       }
 
       window.addEventListener('load', () => {
-        // 金額入力時のカンマ制御
         document.querySelectorAll('.comma-input').forEach(el => {
             el.addEventListener('focus', () => { el.value = removeComma(el.value); });
             el.addEventListener('blur', () => { el.value = formatNumberWithComma(el.value); updateAutoFields(); });
         });
-        // 日付入力時の yyyy 補完制御
         document.querySelectorAll('.date-input').forEach(el => {
-            el.addEventListener('blur', function() {
-                this.value = formatToFullDate(this.value);
-            });
+            el.addEventListener('blur', function() { this.value = formatToFullDate(this.value); });
         });
-
         document.getElementById('form-d-s').addEventListener('input', function() { if(this.value.trim()) document.getElementById('form-is-sold').checked = true; });
         document.getElementById('form-p-s').addEventListener('blur', function() { if(removeComma(this.value).trim()) document.getElementById('form-is-sold').checked = true; });
         document.getElementById('form-type').addEventListener('change', updateAutoFields);
