@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.1</title>
+    <title>不動産管理マップ v4.2</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -10,7 +10,7 @@
         #editor-panel {
             display: none; position: fixed; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 20px; border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 400px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 420px;
             max-height: 95vh; overflow-y: auto;
         }
         #editor-panel h3 { margin: 0 0 15px 0; font-size: 18px; color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 8px; }
@@ -20,13 +20,14 @@
         .form-group input, .form-group select, .form-group textarea { 
             width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; 
         }
-        .flex-row { display: flex; gap: 8px; align-items: center; }
+        .flex-row { display: flex; gap: 8px; align-items: flex-end; }
+        .flex-item { flex: 1; }
         .unit-label { font-size: 12px; color: #888; white-space: nowrap; width: 25px; }
         #unit-price-container { background: #fffbe6; padding: 12px; border-radius: 8px; border: 1px solid #ffe58f; margin-top: 10px; }
         .price-display { font-size: 16px; font-weight: bold; color: #d93025; }
+        .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; margin-top: 5px; text-align: center; }
         .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
-        .highlight-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -42,12 +43,12 @@
             <label>物件種別</label>
             <select id="form-type">
                 <option value="">選択してください</option>
-                <optgroup label="他社分譲のグループ">
+                <optgroup label="他社分譲">
                     <option value="新築戸建">新築戸建</option>
                     <option value="中古戸建">中古戸建</option>
                     <option value="売地">売地</option>
                 </optgroup>
-                <optgroup label="自社分譲のグループ">
+                <optgroup label="自社分譲">
                     <option value="自社新築">自社新築</option>
                     <option value="自社中古">自社中古</option>
                     <option value="自社売地">自社売地</option>
@@ -56,7 +57,7 @@
                     <option value="自社売地(情開)">自社売地(情開)</option>
                     <option value="自社中古MS(情開)">自社中古MS(情開)</option>
                 </optgroup>
-                <optgroup label="マンション・その他のグループ">
+                <optgroup label="マンション・その他">
                     <option value="新築MS">新築MS</option>
                     <option value="中古MS">中古MS</option>
                     <option value="査定依頼">査定依頼</option>
@@ -67,34 +68,9 @@
         <div class="form-group"><label>区画名（物件名称）</label><input type="text" id="form-name"></div>
         <div class="form-group"><label>住所（市区 / 丁目 / 以降）</label>
             <div class="flex-row">
-                <input type="text" id="form-addr1" placeholder="市区">
-                <input type="text" id="form-addr2" placeholder="丁目">
-                <input type="text" id="form-addr3" placeholder="以降">
-            </div>
-        </div>
-
-        <div class="section-title">仕入単価分析</div>
-        <div class="highlight-box">
-            <div class="form-group"><label>購入価格（万円）</label><input type="text" id="siire-price" class="comma-input"></div>
-            <div class="form-group">
-                <label>区画全体土地面積</label>
-                <div class="flex-row">
-                    <input type="text" id="siire-m2" placeholder="0.00" class="comma-input"><span class="unit-label">㎡</span>
-                    <input type="text" id="siire-tsubo" placeholder="0.00" class="comma-input" readonly style="background:#f5f5f5;"><span class="unit-label">坪</span>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>仕入坪単価</label>
-                <div id="val-siire-unit" class="price-display" style="color:#096dd9;">- 万円</div>
-            </div>
-            <div class="form-group">
-                <label>購入価格の根拠</label>
-                <select id="siire-basis">
-                    <option value="">選択してください</option>
-                    <option value="借入額">借入額</option>
-                    <option value="予想金額">予想金額</option>
-                    <option value="実績値">実績値</option>
-                </select>
+                <input type="text" id="form-addr1" placeholder="市区" class="flex-item">
+                <input type="text" id="form-addr2" placeholder="丁目" class="flex-item">
+                <input type="text" id="form-addr3" placeholder="以降" class="flex-item">
             </div>
         </div>
 
@@ -102,23 +78,23 @@
         <div class="form-group">
             <label>初回日 / 初回価格</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-d-first" placeholder="yyyy/mm/dd">
-                <input type="text" id="form-p-first" placeholder="万円" class="comma-input">
+                <input type="text" id="form-d-first" placeholder="yyyy/mm/dd" class="flex-item">
+                <input type="text" id="form-p-first" placeholder="価格" class="comma-input flex-item">
             </div>
             <label>変更1日 / 変更1価格</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-d-c1" placeholder="yyyy/mm/dd">
-                <input type="text" id="form-p-c1" placeholder="万円" class="comma-input">
+                <input type="text" id="form-d-c1" placeholder="yyyy/mm/dd" class="flex-item">
+                <input type="text" id="form-p-c1" placeholder="価格" class="comma-input flex-item">
             </div>
             <label>変更2日 / 変更2価格</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-d-c2" placeholder="yyyy/mm/dd">
-                <input type="text" id="form-p-c2" placeholder="万円" class="comma-input">
+                <input type="text" id="form-d-c2" placeholder="yyyy/mm/dd" class="flex-item">
+                <input type="text" id="form-p-c2" placeholder="価格" class="comma-input flex-item">
             </div>
             <label>成約日 / 成約価格</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-d-s" placeholder="yyyy/mm/dd">
-                <input type="text" id="form-p-s" placeholder="万円" class="comma-input">
+                <input type="text" id="form-d-s" placeholder="yyyy/mm/dd" class="flex-item">
+                <input type="text" id="form-p-s" placeholder="価格" class="comma-input flex-item">
             </div>
             <label>価格に関するメモ</label>
             <textarea id="form-memo-price" rows="2"></textarea>
@@ -128,15 +104,15 @@
         <div class="form-group">
             <label>土地面積</label>
             <div class="flex-row">
-                <input type="text" id="form-t-m2" placeholder="0.00" class="comma-input"><span class="unit-label">㎡</span>
-                <input type="text" id="form-t-tsubo" placeholder="0.00" class="comma-input"><span class="unit-label">坪</span>
+                <input type="text" id="form-t-m2" placeholder="0.00" class="comma-input flex-item"><span class="unit-label">㎡</span>
+                <input type="text" id="form-t-tsubo" placeholder="0.00" class="comma-input flex-item"><span class="unit-label">坪</span>
             </div>
         </div>
         <div class="form-group">
             <label>建物面積 / 間取り</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-b-m2" placeholder="0.00" class="comma-input"><span class="unit-label">㎡</span>
-                <input type="text" id="form-b-tsubo" placeholder="0.00" class="comma-input"><span class="unit-label">坪</span>
+                <input type="text" id="form-b-m2" placeholder="0.00" class="comma-input flex-item"><span class="unit-label">㎡</span>
+                <input type="text" id="form-b-tsubo" placeholder="0.00" class="comma-input flex-item"><span class="unit-label">坪</span>
             </div>
             <input type="text" id="form-layout" placeholder="4LDK">
         </div>
@@ -159,12 +135,48 @@
             </div>
         </div>
 
-        <div class="section-title">公法制限・接道</div>
+        <div class="section-title">業者</div>
         <div class="form-group">
-            <label>建蔽率 / 容積率</label>
+            <label>登録業者名 / 支店名</label>
+            <div class="flex-row" style="margin-bottom:5px;">
+                <input type="text" id="form-gyosha" placeholder="業者名" class="flex-item">
+                <input type="text" id="form-shiten" placeholder="支店名" class="flex-item">
+            </div>
             <div class="flex-row">
-                <input type="text" id="form-kenpei" placeholder="建蔽" class="comma-input"><span class="unit-label">%</span>
-                <input type="text" id="form-youseki" placeholder="容積" class="comma-input"><span class="unit-label">%</span>
+                <div class="flex-item">
+                    <label>取引態様</label>
+                    <select id="form-taiyou">
+                        <option value="">選択</option>
+                        <option value="売主">売主</option>
+                        <option value="仲介(専)">仲介(専)</option>
+                        <option value="仲介(一般)">仲介(一般)</option>
+                        <option value="販売代理">販売代理</option>
+                    </select>
+                </div>
+                <div class="flex-item">
+                    <label>登録媒体</label>
+                    <select id="form-media">
+                        <option value="">選択</option>
+                        <option value="レインズ">レインズ</option>
+                        <option value="仲介HP">仲介HP</option>
+                        <option value="売主HP">売主HP</option>
+                        <option value="ポータルサイト">ポータルサイト</option>
+                        <option value="紙媒体">紙媒体</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">公法制限・接道</div>
+        <div class="flex-row form-group">
+            <div class="flex-item">
+                <label>建蔽率</label>
+                <div class="flex-row"><input type="text" id="form-kenpei" class="comma-input"><span class="unit-label">%</span></div>
+            </div>
+            <div class="flex-item">
+                <label>容積率</label>
+                <div class="flex-row"><input type="text" id="form-youseki" class="comma-input"><span class="unit-label">%</span></div>
             </div>
         </div>
         <div class="form-group">
@@ -188,6 +200,34 @@
             <input type="text" id="form-user" placeholder="氏名">
         </div>
 
+        <div class="section-title">仕入単価分析</div>
+        <div class="form-group">
+            <div class="flex-row" style="margin-bottom:8px;">
+                <div class="flex-item">
+                    <label>購入価格（万円）</label>
+                    <input type="text" id="siire-price" class="comma-input">
+                </div>
+                <div class="flex-item">
+                    <label>購入価格の根拠</label>
+                    <select id="siire-basis">
+                        <option value="">選択</option>
+                        <option value="借入額">借入額</option>
+                        <option value="予想金額">予想金額</option>
+                        <option value="実績値">実績値</option>
+                    </select>
+                </div>
+            </div>
+            <label>区画全体土地面積</label>
+            <div class="flex-row">
+                <input type="text" id="siire-m2" placeholder="0.00" class="comma-input flex-item"><span class="unit-label">㎡</span>
+                <input type="text" id="siire-tsubo" placeholder="0.00" class="comma-input flex-item" readonly style="background:#f5f5f5;"><span class="unit-label">坪</span>
+            </div>
+            <div class="siire-unit-box">
+                <span style="font-size:11px; color:#52c41a;">仕入坪単価：</span>
+                <span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span>
+            </div>
+        </div>
+
         <button class="btn-save" onclick="submitForm()">この内容で保存する</button>
         <button class="btn-cancel" onclick="closePanel()">キャンセル</button>
     </div>
@@ -198,7 +238,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbzFX6Q_fDIihtoTALk7-6heSjdqOHr5B1HyXGXZbzC7bAb1FKt3VodJIZe3aPtN3F7-/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxoBMgqFzw1BlwlL2f_hvFpbgisex4dvVFSCqDFpKsxw5M9oSPI6gX1tkDkrNBW8TZh/exec";
 
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=marker&v=weekly&callback=initMap`;
@@ -282,16 +322,10 @@
         const siireP = parseFloat(removeComma(document.getElementById('siire-price').value)) || 0;
         const siireM2 = parseFloat(removeComma(document.getElementById('siire-m2').value)) || 0;
 
-        // --- 仕入単価計算 ---
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         document.getElementById('siire-tsubo').value = sTsubo || "";
-        if (siireP > 0 && sTsubo > 0) {
-            document.getElementById('val-siire-unit').innerText = (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円";
-        } else {
-            document.getElementById('val-siire-unit').innerText = "- 万円";
-        }
+        document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
 
-        // --- 単価計算（自動判定分岐） ---
         const buildArea = document.getElementById('build-price-input');
         const rowBuild = document.getElementById('row-build');
         const valLand = document.getElementById('val-land');
@@ -306,11 +340,7 @@
         const ratio = pFirst > 0 ? (currentP / pFirst) : 1;
         const fmt = (n) => n.toLocaleString(undefined, {maximumFractionDigits: 1});
 
-        // 分類A: 土地坪単価のみ
-        const groupLandOnly = ["売地", "自社売地", "査定依頼", "査定依頼MS"];
-        // 分類B: 土地・建物・建物価格
         const groupBuildInfo = ["新築戸建", "中古戸建", "自社新築", "自社中古", "自社新築(情開)", "自社中古(情開)"];
-        // 分類C: 床単価のみ
         const groupFloorOnly = ["自社中古MS(情開)", "新築MS", "中古MS", "査定依頼MS"];
 
         if (groupBuildInfo.includes(type)) {
@@ -323,8 +353,8 @@
         } else if (groupFloorOnly.includes(type)) {
             labelLand.innerText = "床単価：";
             if (bTsubo > 0) valLand.innerText = fmt((pFirst / bTsubo) * ratio) + " 万円";
-        } else if (groupLandOnly.includes(type) || type.includes("売地")) {
-            if (lTsubo > 0) valLand.innerText = fmt((pFirst / lTsubo) * ratio) + " 万円";
+        } else if (lTsubo > 0) {
+            valLand.innerText = fmt((pFirst / lTsubo) * ratio) + " 万円";
         }
       }
 
@@ -332,7 +362,6 @@
         document.querySelectorAll('.comma-input').forEach(el => {
             el.addEventListener('input', () => { applyCommaFormat(el); updateAutoFields(); });
         });
-        // 面積連動計算
         const syncArea = (m2Id, tsuboId) => {
             document.getElementById(m2Id).addEventListener('blur', (e) => {
                 const v = removeComma(e.target.value);
@@ -374,9 +403,6 @@
         setV("form-addr1", r["市・区"]);
         setV("form-addr2", r["所在（丁目まで）"]);
         setV("form-addr3", r["住居表示（丁目以降）"]);
-        setV("siire-price", r["購入価格"]);
-        setV("siire-m2", r["仕入土地面積"]);
-        setV("siire-basis", r["購入根拠"]);
         setV("form-d-first", r["初回価格入力日"]);
         setV("form-p-first", r["販売価格（初回入力時/万円）"]);
         setV("form-d-c1", r["変更日1"]);
@@ -391,6 +417,10 @@
         setV("form-b-m2", r["床面積（㎡）"]);
         setV("form-b-tsubo", r["床面積（坪）"]);
         setV("form-layout", r["間取り"]);
+        setV("form-gyosha", r["登録業者名"]);
+        setV("form-shiten", r["支店名"]);
+        setV("form-taiyou", r["取引態様"]);
+        setV("form-media", r["登録媒体"]);
         setV("form-kenpei", r["建蔽率"]);
         setV("form-youseki", r["容積率"]);
         setV("form-law", r["公法制限"]);
@@ -399,6 +429,9 @@
         setV("form-url2", r["参考URL2"]);
         setV("form-memo", r["メモ"]);
         setV("form-user", r["入力者"]);
+        setV("siire-price", r["購入価格"]);
+        setV("siire-m2", r["仕入土地面積"]);
+        setV("siire-basis", r["購入根拠"]);
         updateAutoFields();
         document.getElementById("editor-panel").style.display = "block";
         sharedInfoWindow.close();
@@ -410,19 +443,19 @@
           id: document.getElementById("form-id").value, lat: getV("form-lat"), lng: getV("form-lng"),
           type: document.getElementById("form-type").value, name: document.getElementById("form-name").value,
           addr1: getV("form-addr1"), addr2: getV("form-addr2"), addr3: getV("form-addr3"),
-          siire_p: getV("siire-price"), siire_m2: getV("siire-m2"), siire_basis: document.getElementById("siire-basis").value,
-          siire_unit: removeComma(document.getElementById("val-siire-unit").innerText.replace(" 万円","")),
           d_first: document.getElementById("form-d-first").value, p_first: getV("form-p-first"),
           d_c1: document.getElementById("form-d-c1").value, p_c1: getV("form-p-c1"),
           d_c2: document.getElementById("form-d-c2").value, p_c2: getV("form-p-c2"),
-          d_s: document.getElementById("form-d-s").value, p_s: getV("form-p-s"),
-          sub_p: getV("form-sub-price"),
+          d_s: document.getElementById("form-d-s").value, p_s: getV("form-p-s"), sub_p: getV("form-sub-price"),
           land_unit: removeComma(document.getElementById("val-land").innerText.replace(" 万円","")),
           build_unit: removeComma(document.getElementById("val-build").innerText.replace(" 万円","")),
-          t_m2: getV("form-t-m2"), t_tsubo: getV("form-t-tsubo"), b_m2: getV("form-b-m2"), b_tsubo: getV("form-b-tsubo"),
-          layout: document.getElementById("form-layout").value,
+          t_m2: getV("form-t-m2"), t_tsubo: getV("form-t-tsubo"), b_m2: getV("form-b-m2"), b_tsubo: getV("form-b-tsubo"), layout: document.getElementById("form-layout").value,
+          gyosha: document.getElementById("form-gyosha").value, shiten: document.getElementById("form-shiten").value,
+          taiyou: document.getElementById("form-taiyou").value, media: document.getElementById("form-media").value,
           kenpei: getV("form-kenpei"), youseki: getV("form-youseki"), law: document.getElementById("form-law").value, road: document.getElementById("form-road").value,
-          url1: document.getElementById("form-url1").value, url2: document.getElementById("form-url2").value, memo: document.getElementById("form-memo").value, user: document.getElementById("form-user").value
+          url1: document.getElementById("form-url1").value, url2: document.getElementById("form-url2").value, memo: document.getElementById("form-memo").value, user: document.getElementById("form-user").value,
+          siire_p: getV("siire-price"), siire_m2: getV("siire-m2"), siire_basis: document.getElementById("siire-basis").value,
+          siire_unit: removeComma(document.getElementById("val-siire-unit").innerText.replace(" 万円",""))
         };
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         try {
