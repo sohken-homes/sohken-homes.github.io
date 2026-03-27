@@ -211,52 +211,61 @@
         return new PinElement({ background: color, borderColor: "#fff", glyphColor: "#fff", scale: scale });
       }
 
-      async function loadMarkers() {
+async function loadMarkers() {
         try {
-            const res = await fetch(GAS_URL, { redirect: "follow" });
-            allData = await res.json();
-            const markers = allData.map(row => {
-                if (!row["緯度"] || !row["経度"]) return null;
-                
-                const marker = new google.maps.marker.AdvancedMarkerElement({
-                    position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) },
-                    map: map,
-                    content: getMarkerView(row["物件種別"]).element // ここでアイコンを出し分け
-                });
+          const res = await fetch(GAS_URL, { redirect: "follow" });
+          allData = await res.json();
+          const markers = allData.map(row => {
+            if (!row["緯度"] || !row["経度"]) return null;
+            
+            const marker = new google.maps.marker.AdvancedMarkerElement({
+              position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) },
+              map: map,
+              content: getMarkerView(row["物件種別"]).element
+            });
 
-                marker.addListener("click", () => {
-                    const fmt = (v) => v ? Number(v).toLocaleString() : "-";
-                    let chain = `${fmt(row["販売価格（初回入力時/万円）"])}`;
-                    if (row["変更価格１（万円）"]) chain += ` → ${fmt(row["変更価格１（万円）"])}`;
-                    if (row["成約価格（万円）"]) chain += ` → <span style="color:#d93025;">${fmt(row["成約価格（万円）"]}</span>`;
-                    
-                    const currentId = String(row["ID"]);
+            marker.addListener("click", () => {
+              const fmt = (v) => v ? Number(v).toLocaleString() : "-";
+              let chain = `${fmt(row["販売価格（初回入力時/万円）"])}`;
+              if (row["変更価格１（万円）"]) chain += ` → ${fmt(row["変更価格１（万円）"])}`;
+              if (row["成約価格（万円）"]) chain += ` → <span style="color:#d93025;">${fmt(row["成約価格（万円）"])}</span>`;
+              
+              const currentId = String(row["ID"]);
 
-                    let htmlContent = `
-                        <div style="min-width:250px; line-height:1.6; font-family: sans-serif; padding:5px;">
-                            <div style="font-weight:bold; border-bottom:1px solid #eee; padding-bottom:5px;">${row["区画名"] || "未設定"}</div>
-                            <div style="background:#fff1f0; padding:8px; margin:8px 0; border:1px solid #ffa39e; border-radius:4px; text-align:center;">
-                                <strong>${chain} 万円</strong>
-                            </div>
-                            <div style="font-size:12px; color:#666; margin-bottom:10px;">
-                                ${row["市・区"] || ""}${row["所在（丁目まで）"] || ""}...
-                            </div>
-                            <button id="edit-btn-${currentId}" style="width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">詳細・編集を表示</button>
-                        </div>`;
-                    
-                    sharedInfoWindow.setContent(htmlContent);
-                    sharedInfoWindow.open(map, marker);
+              // 【重要】onclick属性を使わず、idを付与するだけのクリーンなHTMLにします
+              let htmlContent = `
+                <div style="min-width:250px; line-height:1.6; font-family: sans-serif; padding:5px;">
+                  <div style="font-weight:bold; border-bottom:1px solid #eee; padding-bottom:5px;">${row["区画名"] || "未設定"}</div>
+                  <div style="background:#fff1f0; padding:8px; margin:8px 0; border:1px solid #ffa39e; border-radius:4px; text-align:center;">
+                    <strong>${chain} 万円</strong>
+                  </div>
+                  <div style="font-size:12px; color:#666; margin-bottom:10px;">
+                    ${row["市・区"] || ""}${row["所在（丁目まで）"] || ""}...
+                  </div>
+                  <button id="edit-btn-${currentId}" style="width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">詳細・編集を表示</button>
+                </div>`;
+              
+              sharedInfoWindow.setContent(htmlContent);
+              sharedInfoWindow.open(map, marker);
 
-                    // ボタンへのクリックイベントを確実に付与
-                    google.maps.event.addListenerOnce(sharedInfoWindow, 'domready', () => {
-                        const btn = document.getElementById(`edit-btn-${currentId}`);
-                        if (btn) btn.addEventListener('click', () => window.openEdit(currentId));
-                    });
-                });
-                return marker;
-            }).filter(m => m !== null);
-            new markerClusterer.MarkerClusterer({ map, markers });
-        } catch (e) { console.error("読み込みエラー:", e); }
+              // 吹き出しが描画された直後に、ボタンに対してクリックイベントを紐付けます
+              // これにより、HTMLコード内での引用符エラーを物理的に回避します
+              google.maps.event.addListenerOnce(sharedInfoWindow, 'domready', () => {
+                const btn = document.getElementById(`edit-btn-${currentId}`);
+                if (btn) {
+                  btn.onclick = () => {
+                    window.openEdit(currentId);
+                  };
+                }
+              });
+            });
+            return marker;
+          }).filter(m => m !== null);
+          
+          new markerClusterer.MarkerClusterer({ map, markers });
+        } catch (e) { 
+          console.error("データ読み込みエラー:", e); 
+        }
       }
 
       function updateAutoFields() {
