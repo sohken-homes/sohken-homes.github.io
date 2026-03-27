@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.5.2</title>
+    <title>不動産管理マップ v4.5.3</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -222,6 +222,7 @@
         loadMarkers();
       }
 
+      // --- 強化版住所解析ロジック ---
       async function fetchAddressAndFill(lat, lng) {
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
           if (status === "OK" && results[0]) {
@@ -229,27 +230,30 @@
             let cleanAddress = fullAddress.replace(/^.*?[都道府県]/, ""); 
             let cityMatch = cleanAddress.match(/^.*?[市区郡]/);
             let city = cityMatch ? cityMatch[0] : "";
-            let afterCity = cleanAddress.replace(city, "").trim();
+            let remainingText = cleanAddress.replace(city, "").trim();
 
             let chome = "";
-            let remaining = "";
+            let after = "";
 
-            let chomeIndex = afterCity.indexOf("丁目");
-            if (chomeIndex !== -1) {
-              chome = afterCity.substring(0, chomeIndex + 2);
-              remaining = afterCity.substring(chomeIndex + 2).trim();
+            // 1. 「◯丁目」という明示的な表記がある場合
+            let chomeIdx = remainingText.indexOf("丁目");
+            if (chomeIdx !== -1) {
+              chome = remainingText.substring(0, chomeIdx + 2);
+              after = remainingText.substring(chomeIdx + 2).trim();
             } else {
-              let numMatch = afterCity.match(/[0-9０-９]/);
+              // 2. 「丁目」がない場合（北嶺町1-1など）、最初の数字（全角半角両方）を探す
+              let numMatch = remainingText.match(/[0-9０-９]/);
               if (numMatch) {
-                chome = afterCity.substring(0, numMatch.index).trim();
-                remaining = afterCity.substring(numMatch.index).trim();
+                chome = remainingText.substring(0, numMatch.index).trim();
+                after = remainingText.substring(numMatch.index).trim();
               } else {
-                chome = afterCity;
+                // 数字が見つからない場合は暫定的にすべて丁目欄へ
+                chome = remainingText;
               }
             }
             document.getElementById("form-addr1").value = city;
             document.getElementById("form-addr2").value = chome;
-            document.getElementById("form-addr3").value = remaining;
+            document.getElementById("form-addr3").value = after;
           }
         });
       }
