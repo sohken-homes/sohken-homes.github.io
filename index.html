@@ -26,6 +26,9 @@
         .price-display { font-size: 16px; font-weight: bold; color: #d93025; }
         .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
+        
+        /* テキストエリアの形状統一 */
+        textarea { border-radius: 8px; padding: 10px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -174,11 +177,7 @@
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         return parts.join(".");
       }
-
-      function removeComma(val) {
-        return val.toString().replace(/,/g, "");
-      }
-
+      function removeComma(val) { return val.toString().replace(/,/g, ""); }
       function applyCommaFormat(el) {
         const rawValue = removeComma(el.value);
         if (isNaN(rawValue) || rawValue === "") return;
@@ -194,47 +193,72 @@
         loadMarkers();
       }
 
-async function loadMarkers() {
+      // --- マーカーアイコンの生成関数 ---
+      function getMarkerView(type) {
+        const { PinElement } = google.maps.marker;
+        let color = "#1a73e8"; // デフォルト（青）
+        let scale = 1.0;
+
+        if (type && type.includes("自社")) {
+            color = "#d93025"; // 自社物件（赤）
+            scale = 1.2;
+        } else if (type === "査定依頼") {
+            color = "#1e8e3e"; // 査定依頼（緑）
+        } else if (type === "他社分譲") {
+            color = "#f9ab00"; // 他社分譲（オレンジ）
+        }
+
+        return new PinElement({ background: color, borderColor: "#fff", glyphColor: "#fff", scale: scale });
+      }
+
+      async function loadMarkers() {
         try {
             const res = await fetch(GAS_URL, { redirect: "follow" });
             allData = await res.json();
             const markers = allData.map(row => {
                 if (!row["緯度"] || !row["経度"]) return null;
-                const marker = new google.maps.marker.AdvancedMarkerElement({ 
-                    position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) }, 
-                    map: map 
-                });
                 
+                const marker = new google.maps.marker.AdvancedMarkerElement({
+                    position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) },
+                    map: map,
+                    content: getMarkerView(row["物件種別"]).element // ここでアイコンを出し分け
+                });
+
                 marker.addListener("click", () => {
                     const fmt = (v) => v ? Number(v).toLocaleString() : "-";
                     let chain = `${fmt(row["販売価格（初回入力時/万円）"])}`;
                     if (row["変更価格１（万円）"]) chain += ` → ${fmt(row["変更価格１（万円）"])}`;
                     if (row["成約価格（万円）"]) chain += ` → <span style="color:#d93025;">${fmt(row["成約価格（万円）"]}</span>`;
                     
-                    // エラー回避のため、IDを変数に一度格納
-                    const currentId = row["ID"];
+                    const currentId = String(row["ID"]);
 
-                    let html = `
-                    <div style="min-width:250px; line-height:1.6; font-family: sans-serif;">
-                        <div style="font-weight:bold; border-bottom:1px solid #eee; padding-bottom:5px;">${row["区画名"] || "未設定"}</div>
-                        <div style="background:#fff1f0; padding:8px; margin:8px 0; border:1px solid #ffa39e; border-radius:4px; text-align:center;">
-                            <strong>${chain} 万円</strong>
-                        </div>
-                        <div style="font-size:12px; color:#666; margin-bottom:10px;">
-                            ${row["市・区"] || ""}${row["所在（丁目まで）"] || ""}...
-                        </div>
-                        <button style="width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;" 
-                                onclick="openEdit('${currentId}')">詳細・編集を表示</button>
-                    </div>`;
+                    let htmlContent = `
+                        <div style="min-width:250px; line-height:1.6; font-family: sans-serif; padding:5px;">
+                            <div style="font-weight:bold; border-bottom:1px solid #eee; padding-bottom:5px;">${row["区画名"] || "未設定"}</div>
+                            <div style="background:#fff1f0; padding:8px; margin:8px 0; border:1px solid #ffa39e; border-radius:4px; text-align:center;">
+                                <strong>${chain} 万円</strong>
+                            </div>
+                            <div style="font-size:12px; color:#666; margin-bottom:10px;">
+                                ${row["市・区"] || ""}${row["所在（丁目まで）"] || ""}...
+                            </div>
+                            <button id="edit-btn-${currentId}" style="width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">詳細・編集を表示</button>
+                        </div>`;
                     
-                    sharedInfoWindow.setContent(html);
+                    sharedInfoWindow.setContent(htmlContent);
                     sharedInfoWindow.open(map, marker);
+
+                    // ボタンへのクリックイベントを確実に付与
+                    google.maps.event.addListenerOnce(sharedInfoWindow, 'domready', () => {
+                        const btn = document.getElementById(`edit-btn-${currentId}`);
+                        if (btn) btn.addEventListener('click', () => window.openEdit(currentId));
+                    });
                 });
                 return marker;
             }).filter(m => m !== null);
             new markerClusterer.MarkerClusterer({ map, markers });
-        } catch (e) { console.error("データ読み込みエラー:", e); }
+        } catch (e) { console.error("読み込みエラー:", e); }
       }
+
       function updateAutoFields() {
         const type = document.getElementById('form-type').value;
         const pFirst = parseFloat(removeComma(document.getElementById('form-p-first').value)) || 0;
@@ -274,26 +298,17 @@ async function loadMarkers() {
       }
 
       window.addEventListener('load', () => {
-        // カンマリアルタイム適用
         document.querySelectorAll('.comma-input').forEach(el => {
-            el.addEventListener('input', () => {
-                applyCommaFormat(el);
-                updateAutoFields();
-            });
+            el.addEventListener('input', () => { applyCommaFormat(el); updateAutoFields(); });
         });
-
         document.getElementById('form-t-m2').addEventListener('blur', (e) => {
             const val = removeComma(e.target.value);
-            if(val) {
-                document.getElementById('form-t-tsubo').value = formatNumberWithComma(Math.floor((val * 0.3025) * 100) / 100);
-            }
+            if(val) document.getElementById('form-t-tsubo').value = formatNumberWithComma(Math.floor((val * 0.3025) * 100) / 100);
             updateAutoFields();
         });
         document.getElementById('form-b-m2').addEventListener('blur', (e) => {
             const val = removeComma(e.target.value);
-            if(val) {
-                document.getElementById('form-b-tsubo').value = formatNumberWithComma(Math.floor((val * 0.3025) * 100) / 100);
-            }
+            if(val) document.getElementById('form-b-tsubo').value = formatNumberWithComma(Math.floor((val * 0.3025) * 100) / 100);
             updateAutoFields();
         });
         document.getElementById('form-type').addEventListener('change', updateAutoFields);
@@ -311,14 +326,13 @@ async function loadMarkers() {
       };
 
       window.openEdit = (id) => {
-        const r = allData.find(d => d["ID"] == id);
+        const r = allData.find(d => String(d["ID"]) === String(id));
         if (!r) return;
         const setV = (id, val) => {
             const el = document.getElementById(id);
             if(el.classList.contains('comma-input')) el.value = formatNumberWithComma(val || "");
             else el.value = val || "";
         };
-
         document.getElementById("form-id").value = r["ID"];
         document.getElementById("form-lat").value = r["緯度"];
         document.getElementById("form-lng").value = r["経度"];
@@ -348,7 +362,6 @@ async function loadMarkers() {
         setV("form-url1", r["参考URL1"]);
         setV("form-url2", r["参考URL2"]);
         setV("form-memo", r["メモ"]);
-
         updateAutoFields();
         document.getElementById("editor-panel").style.display = "block";
         sharedInfoWindow.close();
@@ -369,15 +382,12 @@ async function loadMarkers() {
           t_m2: getV("form-t-m2"), t_tsubo: getV("form-t-tsubo"), b_m2: getV("form-b-m2"), b_tsubo: getV("form-b-tsubo"),
           layout: document.getElementById("form-layout").value, url1: document.getElementById("form-url1").value, url2: document.getElementById("form-url2").value, memo: document.getElementById("form-memo").value
         };
-
-        if(!data.lat || data.lat === "null") { alert("座標エラー"); return; }
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         try {
             await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
             location.reload();
         } catch (e) { alert("失敗"); btn.disabled = false; btn.innerText = "保存する"; }
       };
-
       window.closePanel = () => document.getElementById("editor-panel").style.display = "none";
     </script>
 </body>
