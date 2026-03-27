@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.2</title>
+    <title>不動産管理マップ v4.2.1</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -238,7 +238,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbwYhS9cjkf161I0wRhwilkPW3DQmiPf3E7zBduH5eHG8DMqm9So1PfUlKlED_nkH1g0/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxr1eWbWn1UKBsuDNoZNxnOhqCaNWVorvZQkFMj4cASsMkuIBo09r918yBrhN6qcwq4/exec";
 
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=marker&v=weekly&callback=initMap`;
@@ -246,6 +246,41 @@
       document.head.appendChild(script);
 
       let map, sharedInfoWindow, allData = [];
+
+      // --- 1. 物件種別と画像アイコンの対応表 (★★★ここをすべて書き換えてください★★★) ---
+      const ICON_MAP = {
+          "新築戸建": "https://sohken-homes.github.io/icon_new_house.png",
+          "中古戸建": "https://sohken-homes.github.io/icon_used_house.png",
+          "売地": "https://sohken-homes.github.io/icon_land.png",
+          "自社新築": "https://sohken-homes.github.io/icon_jisha_new.png", 
+          "自社中古": "https://sohken-homes.github.io/icon_jisha_used.png",
+          "自社売地": "https://sohken-homes.github.io/icon_jisha_land.png",
+          "自社新築(情開)": "https://sohken-homes.github.io/icon_jisha_new_info.png", // 別画像
+          "自社中古(情開)": "https://sohken-homes.github.io/icon_jisha_used_info.png",
+          "自社売地(情開)": "https://sohken-homes.github.io/icon_jisha_land_info.png",
+          "自社中古MS(情開)": "https://sohken-homes.github.io/icon_jisha_ms_info.png",
+          "新築MS": "https://sohken-homes.github.io/icon_new_ms.png",
+          "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
+          "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png",
+          "査定依頼MS": "https://sohken-homes.github.io/icon_satei_ms.png",
+          // 該当がない場合のデフォルトアイコン（Google公式の赤いピン）
+          "DEFAULT": "http://maps.google.com/mapfiles/ms/icons/red-dot.png" 
+      };
+
+      // --- 2. アイコン要素を作成する関数 ---
+      function getMarkerContent(type) {
+          const img = document.createElement("img");
+          // ICON_MAPに登録されている画像URLを取得。なければデフォルト。
+          img.src = ICON_MAP[type] || ICON_MAP["DEFAULT"];
+          
+          // --- アイコンのサイズ調整 (見やすいサイズに調整してください) ---
+          img.style.width = "32px";  // 横幅32px
+          img.style.height = "32px"; // 高さ32px
+          
+          img.style.cursor = "pointer";
+          // AdvancedMarkerは画像の下端中央が座標に重なるので、ピン型ならそのままでOK
+          return img;
+      }
 
       function formatNumberWithComma(val) {
         if (!val && val !== 0) return "";
@@ -269,25 +304,20 @@
         loadMarkers();
       }
 
-      function getMarkerView(type) {
-        const { PinElement } = google.maps.marker;
-        let color = "#1a73e8";
-        if (type && type.includes("自社")) color = "#d93025";
-        else if (type && type.includes("査定")) color = "#1e8e3e";
-        return new PinElement({ background: color, borderColor: "#fff", glyphColor: "#fff" });
-      }
-
       async function loadMarkers() {
         try {
             const res = await fetch(GAS_URL, { redirect: "follow" });
             allData = await res.json();
             const markers = allData.map(row => {
                 if (!row["緯度"] || !row["経度"]) return null;
+                
+                // --- 3. マーカー作成部分で画像コンテンツを適用 ---
                 const marker = new google.maps.marker.AdvancedMarkerElement({
                     position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) },
                     map: map,
-                    content: getMarkerView(row["物件種別"]).element
+                    content: getMarkerContent(row["物件種別"]) // 自作画像アイコン
                 });
+
                 marker.addListener("click", () => {
                     const fmt = (v) => v ? Number(v).toLocaleString() : "-";
                     let chain = fmt(row["販売価格（初回入力時/万円）"]);
