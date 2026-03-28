@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.9.2</title>
+    <title>不動産管理マップ v4.9.4</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -172,7 +172,7 @@
             <div class="form-group">
                 <div class="flex-row" style="margin-bottom:5px;">
                     <div class="flex-item"><label>建蔽率 (%)</label><input type="text" id="form-kenpei" class="comma-input"></div>
-                    <div class="flex-item"><label>容積率 (%)</label><input type="text" id="form-youseki" class="comma-input"></div>
+                    <div class="flex-item"><label>容績率 (%)</label><input type="text" id="form-youseki" class="comma-input"></div>
                 </div>
                 <input type="text" id="form-law" placeholder="用途地域など" style="margin-bottom:5px;">
                 <input type="text" id="form-road" placeholder="道路状況">
@@ -277,22 +277,39 @@
         loadMarkers();
       }
 
+      // 住所解析ロジック（全角・半角数字両対応版）
       function parseAddress(fullAddress) {
+          // 都道府県を削除
           let address = fullAddress.replace(/^日本、/, "").replace(/^〒\d{3}-\d{4}\s*/, "");
+          address = address.replace(/^.{2,3}[都道府県]/, "");
+
           let city = "", chome = "", banchi = "";
+          
+          // 「市区町村」を抽出して削除
           const cityMatch = address.match(/^.*?[市区町村]/);
-          if (cityMatch) { city = cityMatch[0]; address = address.replace(city, ""); }
+          if (cityMatch) {
+              city = cityMatch[0];
+              address = address.replace(city, "");
+          }
+          
+          // 残りの文字列の解析
           if (address.includes("丁目")) {
-              const chomeMatch = address.match(/^(.*?[丁目])/);
-              if (chomeMatch) { chome = chomeMatch[0]; banchi = address.replace(chome, "").trim(); }
+              // 「丁目」が含まれる場合：丁目の直後で分割
+              const idx = address.indexOf("丁目") + 2; 
+              chome = address.substring(0, idx);
+              banchi = address.substring(idx).trim();
           } else {
-              const numMatch = address.match(/\d/);
+              // 「丁目」が含まれない場合：★半角・全角数字のどちらかが最初に現れる位置で分割
+              const numMatch = address.match(/[0-9０-９]/);
               if (numMatch) {
                   const numIdx = address.indexOf(numMatch[0]);
                   chome = address.substring(0, numIdx).trim();
                   banchi = address.substring(numIdx).trim();
-              } else { chome = address; }
+              } else {
+                  chome = address;
+              }
           }
+          
           document.getElementById("form-addr1").value = city;
           document.getElementById("form-addr2").value = chome;
           document.getElementById("form-addr3").value = banchi;
@@ -301,12 +318,13 @@
 
       function fetchAddress(lat, lng) {
           geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-              if (status === "OK" && results[0]) { parseAddress(results[0].formatted_address); }
+              if (status === "OK" && results[0]) {
+                  parseAddress(results[0].formatted_address);
+              }
           });
       }
 
       window.addNewProperty = (lat, lng) => {
-        // ★修正：前回の暫定マーカーがあれば確実に削除
         if(currentEditingMarker && !currentEditingMarker.rowId) {
             currentEditingMarker.map = null;
             currentEditingMarker = null;
@@ -336,7 +354,6 @@
         const r = allData.find(d => String(d["ID"]) === String(id));
         if (!r) return;
         
-        // ★修正：新規入力中のマーカーがあれば削除
         if(currentEditingMarker && !currentEditingMarker.rowId) {
             currentEditingMarker.map = null;
         }
@@ -354,7 +371,6 @@
         
         currentTabs = [{ label: r["区画名"] || "区画1", data: {} }];
         
-        // ★修正：全項目のデータ流し込み（交通なども漏らさず）
         const sheetToKey = {
             "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name",
             "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
