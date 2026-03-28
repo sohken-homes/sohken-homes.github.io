@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.8.1</title>
+    <title>不動産管理マップ v4.8.5</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -27,7 +27,7 @@
             position: fixed; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 0; border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px;
-            max-height: 95vh; overflow: hidden; flex-direction: column;
+            max-height: 95vh; overflow: hidden; display: flex; flex-direction: column;
         }
         .panel-header { padding: 15px 20px 10px 20px; background: white; flex-shrink: 0; }
         .panel-header h3 { margin: 0 0 5px 0; font-size: 18px; color: #1a73e8; }
@@ -47,7 +47,6 @@
         .flex-item { flex: 1; }
         .unit-label { font-size: 12px; color: #888; white-space: nowrap; width: 25px; }
         
-        /* 成約済チェックボックスの横書き修正 */
         .sold-inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cf1322; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
         .sold-inline input { width: 18px !important; height: 18px !important; margin: 0; cursor: pointer; }
 
@@ -92,7 +91,8 @@
                     <optgroup label="マンション・その他"><option value="新築MS">新築MS</option><option value="中古MS">中古MS</option><option value="査定依頼">査定依頼</option><option value="査定依頼MS">査定依頼MS</option></optgroup>
                 </select>
             </div>
-            <div class="form-group"><label>区画名（物件名称）</label><input type="text" id="form-name" placeholder="1号棟、区画Aなど"></div>
+            <div class="form-group"><label>物件名称（シリーズ名・現場名）</label><input type="text" id="form-name" placeholder="例：〇〇シリーズ世田谷など"></div>
+            <div class="form-group"><label>区画番号（タブに表示される個別の名前）</label><input type="text" id="form-tab-name" placeholder="例：1号棟、区画Aなど"></div>
             <div class="form-group"><label>住所（市区 / 丁目 / 以降）</label>
                 <div class="flex-row">
                     <input type="text" id="form-addr1" placeholder="市区" class="flex-item">
@@ -106,22 +106,22 @@
                 <label>初回入力日 / 初回価格</label>
                 <div class="flex-row" style="margin-bottom:8px;">
                     <input type="text" id="form-d-first" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-first" placeholder="初回価格" class="comma-input flex-item">
+                    <input type="text" id="form-p-first" placeholder="価格" class="comma-input flex-item">
                 </div>
                 <label>変更日１ / 価格１</label>
                 <div class="flex-row" style="margin-bottom:8px;">
                     <input type="text" id="form-d-c1" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-c1" placeholder="変更価格１" class="comma-input flex-item">
+                    <input type="text" id="form-p-c1" placeholder="価格" class="comma-input flex-item">
                 </div>
                 <label>変更日２ / 価格２</label>
                 <div class="flex-row" style="margin-bottom:8px;">
                     <input type="text" id="form-d-c2" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-c2" placeholder="変更価格２" class="comma-input flex-item">
+                    <input type="text" id="form-p-c2" placeholder="価格" class="comma-input flex-item">
                 </div>
                 <label>変更日３ / 価格３</label>
                 <div class="flex-row" style="margin-bottom:8px;">
                     <input type="text" id="form-d-c3" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-c3" placeholder="変更価格３" class="comma-input flex-item">
+                    <input type="text" id="form-p-c3" placeholder="価格" class="comma-input flex-item">
                 </div>
                 <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
                     <label style="margin:0;">成約日 / 成約価格</label>
@@ -129,7 +129,7 @@
                 </div>
                 <div class="flex-row" style="margin-bottom:8px;">
                     <input type="text" id="form-d-s" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-s" placeholder="成約価格" class="comma-input flex-item">
+                    <input type="text" id="form-p-s" placeholder="価格" class="comma-input flex-item">
                 </div>
                 <label>価格備考/補足</label>
                 <textarea id="form-price-memo" rows="2" placeholder="理由や履歴など"></textarea>
@@ -159,7 +159,7 @@
                     <input type="text" id="form-sub-price" placeholder="建物価格" class="comma-input">
                 </div>
                 <div id="calc-result-area">
-                    <div style="display:flex; justify-content:space-between;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                         <span id="label-land" style="font-size:12px;">土地坪単価：</span>
                         <span id="val-land" class="price-display">- 万円</span>
                     </div>
@@ -172,6 +172,22 @@
                 <div class="flex-row" style="margin-bottom:5px;">
                     <input type="text" id="form-gyosha" placeholder="業者名" class="flex-item">
                     <input type="text" id="form-shiten" placeholder="支店名" class="flex-item">
+                </div>
+                <div class="flex-row" style="margin-bottom:8px;">
+                    <div class="flex-item">
+                        <label>取引態様</label>
+                        <select id="form-taiyou">
+                            <option value="">選択</option>
+                            <option value="売主">売主</option><option value="仲介(専)">仲介(専)</option><option value="仲介(一般)">仲介(一般)</option><option value="販売代理">販売代理</option>
+                        </select>
+                    </div>
+                    <div class="flex-item">
+                        <label>登録媒体</label>
+                        <select id="form-media">
+                            <option value="">選択</option>
+                            <option value="レインズ">レインズ</option><option value="仲介HP">仲介HP</option><option value="売主HP">売主HP</option><option value="ポータル">ポータル</option><option value="紹介">紹介</option><option value="その他">その他</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介担当者名"></div>
             </div>
@@ -226,6 +242,21 @@
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
       const GAS_URL = "https://script.google.com/macros/s/AKfycbyGOxkWQeQk3EHbFLxGCjbEXiR7lCYkRFY7Qfm3hWEH8_lYi3LM5cPCZMeOOcAS-4yA/exec";
 
+      // HTMLの各IDとGAS側へ送るキーのマッピング（完全版）
+      const FORM_MAP = {
+          "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
+          "form-addr1":"addr1", "form-addr2":"addr2", "form-addr3":"addr3",
+          "form-d-first":"d_first", "form-p-first":"p_first",
+          "form-d-c1":"d_c1", "form-p-c1":"p_c1", "form-d-c2":"d_c2", "form-p-c2":"p_c2",
+          "form-d-c3":"d_c3", "form-p-c3":"p_c3", "form-d-s":"d_s", "form-p-s":"p_s",
+          "form-price-memo":"price_memo", "form-is-sold":"is_sold", "form-t-m2":"t_m2", "form-t-tsubo":"t_tsubo",
+          "form-b-m2":"b_m2", "form-b-tsubo":"b_tsubo", "form-layout":"layout", "form-sub-price":"sub_p",
+          "form-gyosha":"gyosha", "form-shiten":"shiten", "form-taiyou":"taiyou", "form-media":"media", "form-intro-user":"intro_user",
+          "form-kenpei":"kenpei", "form-youseki":"youseki", "form-law":"law", "form-road":"road",
+          "form-url1":"url1", "form-url2":"url2", "form-memo":"memo", "form-user":"user",
+          "siire-price":"siire_p", "siire-m2":"siire_m2", "siire-basis":"siire_basis"
+      };
+
       const ICON_MAP = {
           "新築戸建": "https://sohken-homes.github.io/icon_new_house.png",
           "中古戸建": "https://sohken-homes.github.io/icon_used_house.png",
@@ -233,21 +264,10 @@
           "自社新築": "https://sohken-homes.github.io/icon_jisha_new.png", 
           "自社中古": "https://sohken-homes.github.io/icon_jisha_used.png",
           "自社売地": "https://sohken-homes.github.io/icon_jisha_land.png",
-          "自社新築(情開)": "https://sohken-homes.github.io/icon_jisha_new_info.png",
-          "自社中古(情開)": "https://sohken-homes.github.io/icon_jisha_used_info.png",
-          "自社売地(情開)": "https://sohken-homes.github.io/icon_jisha_land_info.png",
-          "自社中古MS(情開)": "https://sohken-homes.github.io/icon_jisha_ms_info.png",
           "新築MS": "https://sohken-homes.github.io/icon_new_ms.png",
           "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
           "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png",
-          "査定依頼MS": "https://sohken-homes.github.io/icon_satei_ms.png",
-          "SOLD_新築戸建": "https://sohken-homes.github.io/sold_house.png",
-          "SOLD_中古戸建": "https://sohken-homes.github.io/sold_house.png",
-          "SOLD_売地": "https://sohken-homes.github.io/sold_land.png",
-          "SOLD_新築MS": "https://sohken-homes.github.io/sold_ms.png",
-          "SOLD_中古MS": "https://sohken-homes.github.io/sold_ms.png",
-          "SOLD_査定依頼": "https://sohken-homes.github.io/sold_satei.png",
-          "SOLD_査定依頼MS": "https://sohken-homes.github.io/sold_satei_ms.png",
+          "SOLD": "https://sohken-homes.github.io/sold_house.png",
           "DEFAULT": "http://maps.google.com/mapfiles/ms/icons/red-dot.png" 
       };
 
@@ -258,26 +278,9 @@
       let map, sharedInfoWindow, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
 
-      // 保存用マッピング定義（URL2を追加）
-      const FORM_MAP = {
-          "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name",
-          "form-addr1":"addr1", "form-addr2":"addr2", "form-addr3":"addr3",
-          "form-d-first":"d_first", "form-p-first":"p_first",
-          "form-d-c1":"d_c1", "form-p-c1":"p_c1", "form-d-c2":"d_c2", "form-p-c2":"p_c2",
-          "form-d-c3":"d_c3", "form-p-c3":"p_c3", "form-d-s":"d_s", "form-p-s":"p_s",
-          "form-price-memo":"price_memo", "form-is-sold":"is_sold", "form-t-m2":"t_m2", "form-t-tsubo":"t_tsubo",
-          "form-b-m2":"b_m2", "form-b-tsubo":"b_tsubo", "form-layout":"layout", "form-sub-price":"sub_p",
-          "form-gyosha":"gyosha", "form-shiten":"shiten", "form-intro-user":"intro_user",
-          "form-kenpei":"kenpei", "form-youseki":"youseki", "form-law":"law", "form-road":"road",
-          "form-url1":"url1", "form-url2":"url2", "form-memo":"memo", "form-user":"user",
-          "siire-price":"siire_p", "siire-m2":"siire_m2", "siire-basis":"siire_basis"
-      };
-
       function getMarkerContent(type, isSold) {
           const img = document.createElement("img");
-          const targetTypes = ["新築戸建", "中古戸建", "売地", "新築MS", "中古MS", "査定依頼", "査定依頼MS"];
-          let iconUrl = ICON_MAP[type] || ICON_MAP["DEFAULT"];
-          if (isSold && targetTypes.includes(type)) iconUrl = ICON_MAP["SOLD_" + type] || iconUrl;
+          let iconUrl = isSold ? ICON_MAP["SOLD"] : (ICON_MAP[type] || ICON_MAP["DEFAULT"]);
           img.src = iconUrl; img.style.width = "32px"; img.style.height = "32px"; img.style.cursor = "pointer";
           return img;
       }
@@ -333,7 +336,7 @@
         currentTabs.forEach((tab, index) => {
             const el = document.createElement("div");
             el.className = `tab ${index === activeTabIndex ? 'active' : ''}`;
-            el.innerText = tab.label;
+            el.innerText = tab.label || `区画${index + 1}`;
             el.onclick = (e) => { e.stopPropagation(); switchTab(index); };
             bar.appendChild(el);
         });
@@ -352,17 +355,10 @@
       function addTab() {
         saveCurrentTabData();
         const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
-        baseData.id = ""; baseData.name = "";
-        baseData.d_first = ""; baseData.p_first = "";
-        baseData.d_c1 = ""; baseData.p_c1 = "";
-        baseData.d_c2 = ""; baseData.p_c2 = "";
-        baseData.d_c3 = ""; baseData.p_c3 = "";
-        baseData.d_s = ""; baseData.p_s = "";
-        baseData.price_memo = ""; baseData.is_sold = false;
-        baseData.t_m2 = ""; baseData.t_tsubo = "";
-        baseData.b_m2 = ""; baseData.b_tsubo = "";
-        baseData.layout = ""; baseData.sub_p = "";
-        currentTabs.push({ label: `区画${currentTabs.length + 1}`, data: baseData });
+        baseData.id = ""; baseData.tab_name = `区画${currentTabs.length + 1}`;
+        // 金額や面積など、新規区画として空にすべき項目をリセット
+        ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold"].forEach(k => baseData[k] = "");
+        currentTabs.push({ label: baseData.tab_name, data: baseData });
         activeTabIndex = currentTabs.length - 1;
         loadTabData(baseData); renderTabs();
       }
@@ -376,6 +372,7 @@
             if(el.type === 'checkbox') data[key] = el.checked;
             else data[key] = removeComma(el.value);
         });
+        currentTabs[activeTabIndex].label = data.tab_name;
       }
 
       function loadTabData(data) {
@@ -402,9 +399,11 @@
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         document.getElementById('siire-tsubo').value = formatNumberWithComma(sTsubo, 2);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
+        
         const currentP = pS || parseFloat(removeComma(document.getElementById('form-p-c3').value)) || parseFloat(removeComma(document.getElementById('form-p-c2').value)) || parseFloat(removeComma(document.getElementById('form-p-c1').value)) || pFirst;
         const ratio = pFirst > 0 ? (currentP / pFirst) : 1;
         const fmt = (n) => n.toLocaleString(undefined, {maximumFractionDigits: 1});
+
         document.getElementById('build-price-input').style.display = "none";
         document.getElementById('calc-result-area').style.display = "block";
         document.getElementById('label-land').innerText = "土地坪単価：";
@@ -418,9 +417,9 @@
 
       window.addNewProperty = (lat, lng) => {
         if(currentEditingMarker && !currentEditingMarker.rowId) currentEditingMarker.map = null;
-        const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map });
-        marker.gmpDraggable = true; currentEditingMarker = marker;
-        currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng } }];
+        const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true });
+        currentEditingMarker = marker;
+        currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng, tab_name: "区画1" } }];
         activeTabIndex = 0; loadTabData(currentTabs[0].data); renderTabs();
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
       };
@@ -430,18 +429,19 @@
         if (!r) return;
         const marker = markersList.find(m => m.rowId === id);
         if(marker) { marker.gmpDraggable = true; currentEditingMarker = marker; }
-        currentTabs = [{ label: "区画1", data: {} }];
+        currentTabs = [{ label: r["区画名"] || "区画1", data: {} }];
         
+        // シートのヘッダー名から内部キーへのマッピング（既存データ読み込み用）
         const sheetToKey = {
-            "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "区画名":"name",
+            "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name",
             "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
             "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first",
             "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2",
             "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s",
             "価格推移備考":"price_memo", "成約フラグ":"is_sold", "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo",
             "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p",
-            "登録業者名":"gyosha", "支店名":"shiten", "紹介担当者":"intro_user", "建蔽率":"kenpei", 
-            "容積率":"youseki", "公法制限":"law", "接道":"road", "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
+            "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
+            "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road", "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
             "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis"
         };
         Object.keys(sheetToKey).forEach(s => currentTabs[0].data[sheetToKey[s]] = r[s]);
@@ -493,7 +493,7 @@
             marker.rowId = String(row["ID"]);
             marker.addListener("click", (e) => {
                 e.stop(); const fmt = (v) => v ? Number(v).toLocaleString() : "-";
-                sharedInfoWindow.setContent(`<div style="min-width:200px; padding:10px;"><strong>${row["区画名"] || "未設定"}</strong><br>価格: ${fmt(row["販売価格（初回入力時/万円）"])}万円<br><button onclick="openEdit('${marker.rowId}')" style="margin-top:10px; width:100%;">編集</button></div>`);
+                sharedInfoWindow.setContent(`<div style="min-width:200px; padding:10px;"><strong>${row["物件名称"] || "未設定"}</strong> (${row["区画名"] || "-"})<br>価格: ${fmt(row["販売価格（初回入力時/万円）"])}万円<br><button onclick="openEdit('${marker.rowId}')" style="margin-top:10px; width:100%;">編集</button></div>`);
                 sharedInfoWindow.open(map, marker);
             });
             marker.addListener("dblclick", (e) => { e.stop(); openEdit(marker.rowId); });
