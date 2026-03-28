@@ -1,42 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.8.5</title>
+    <title>不動産管理マップ v4.8.8</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: "Hiragino Sans", "Meiryo", sans-serif; background: #f0f2f5; }
         #map { height: 100vh; width: 100%; }
-        
-        #search-box-container {
-            position: absolute; top: 10px; left: 10px; z-index: 5;
-            display: flex; gap: 5px; align-items: center;
-        }
-        #address-input {
-            width: 180px; padding: 10px 15px; border: none; border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none;
-        }
-        #search-btn {
-            padding: 10px 15px; background: #1a73e8; color: white; border: none; 
-            border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            cursor: pointer; font-size: 14px; font-weight: bold;
-        }
-
-        #editor-panel {
-            display: none !important; 
-            position: fixed; top: 10px; right: 10px; z-index: 1000;
-            background: white; padding: 0; border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px;
-            max-height: 95vh; overflow: hidden; display: flex; flex-direction: column;
-        }
+        #search-box-container { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; gap: 5px; align-items: center; }
+        #address-input { width: 180px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
+        #search-btn { padding: 10px 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: bold; }
+        #editor-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; display: flex; flex-direction: column; }
         .panel-header { padding: 15px 20px 10px 20px; background: white; flex-shrink: 0; }
         .panel-header h3 { margin: 0 0 5px 0; font-size: 18px; color: #1a73e8; }
-        
         .tab-container { display: flex; gap: 4px; padding: 0 15px; background: #f1f3f4; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; }
         .tab { padding: 8px 16px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; font-size: 13px; color: #5f6368; white-space: nowrap; margin-top: 5px; }
         .tab.active { background: white; border-color: #ddd; color: #1a73e8; font-weight: bold; position: relative; top: 1px; }
         .tab-add { color: #188038; font-weight: bold; background: #e6f4ea; border-radius: 8px; margin-bottom: 5px;}
-
         .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; background: white; }
         .drag-notice { font-size: 10px; color: #e67e22; margin-bottom: 10px; font-weight: bold; }
         .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
@@ -46,14 +26,11 @@
         .flex-row { display: flex; gap: 8px; align-items: flex-end; }
         .flex-item { flex: 1; }
         .unit-label { font-size: 12px; color: #888; white-space: nowrap; width: 25px; }
-        
         .sold-inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cf1322; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
         .sold-inline input { width: 18px !important; height: 18px !important; margin: 0; cursor: pointer; }
-
         #unit-price-container { background: #fffbe6; padding: 12px; border-radius: 8px; border: 1px solid #ffe58f; margin-top: 10px; }
         .price-display { font-size: 16px; font-weight: bold; color: #d93025; }
         .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; text-align: center; }
-        
         .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
         .btn-delete { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
@@ -91,8 +68,8 @@
                     <optgroup label="マンション・その他"><option value="新築MS">新築MS</option><option value="中古MS">中古MS</option><option value="査定依頼">査定依頼</option><option value="査定依頼MS">査定依頼MS</option></optgroup>
                 </select>
             </div>
-            <div class="form-group"><label>物件名称（シリーズ名・現場名）</label><input type="text" id="form-name" placeholder="例：〇〇シリーズ世田谷など"></div>
-            <div class="form-group"><label>区画番号（タブに表示される個別の名前）</label><input type="text" id="form-tab-name" placeholder="例：1号棟、区画Aなど"></div>
+            <div class="form-group"><label>物件名称（現場全体の名前）</label><input type="text" id="form-name" placeholder="例：〇〇シリーズ世田谷など"></div>
+            <div class="form-group"><label>区画番号（タブ表示名）</label><input type="text" id="form-tab-name" placeholder="例：1号棟、区画Aなど"></div>
             <div class="form-group"><label>住所（市区 / 丁目 / 以降）</label>
                 <div class="flex-row">
                     <input type="text" id="form-addr1" placeholder="市区" class="flex-item">
@@ -105,31 +82,31 @@
             <div class="form-group">
                 <label>初回入力日 / 初回価格</label>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-first" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
+                    <input type="text" id="form-d-first" placeholder="月/日 or 年/月/日" class="flex-item date-input">
                     <input type="text" id="form-p-first" placeholder="価格" class="comma-input flex-item">
                 </div>
                 <label>変更日１ / 価格１</label>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-c1" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-c1" placeholder="価格" class="comma-input flex-item">
+                    <input type="text" id="form-d-c1" class="flex-item date-input">
+                    <input type="text" id="form-p-c1" class="comma-input flex-item">
                 </div>
                 <label>変更日２ / 価格２</label>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-c2" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-c2" placeholder="価格" class="comma-input flex-item">
+                    <input type="text" id="form-d-c2" class="flex-item date-input">
+                    <input type="text" id="form-p-c2" class="comma-input flex-item">
                 </div>
                 <label>変更日３ / 価格３</label>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-c3" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-c3" placeholder="価格" class="comma-input flex-item">
+                    <input type="text" id="form-d-c3" class="flex-item date-input">
+                    <input type="text" id="form-p-c3" class="comma-input flex-item">
                 </div>
                 <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
                     <label style="margin:0;">成約日 / 成約価格</label>
                     <div class="sold-inline"><input type="checkbox" id="form-is-sold"> 成約済</div>
                 </div>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-s" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-s" placeholder="価格" class="comma-input flex-item">
+                    <input type="text" id="form-d-s" class="flex-item date-input">
+                    <input type="text" id="form-p-s" class="comma-input flex-item">
                 </div>
                 <label>価格備考/補足</label>
                 <textarea id="form-price-memo" rows="2" placeholder="理由や履歴など"></textarea>
@@ -155,8 +132,8 @@
             <div class="section-title">単価計算（自動反映）</div>
             <div id="unit-price-container">
                 <div id="build-price-input" style="display:none; margin-bottom:10px;">
-                    <label style="font-size:10px; color:#c41d7f;">建物価格を入力（万円）</label>
-                    <input type="text" id="form-sub-price" placeholder="建物価格" class="comma-input">
+                    <label style="font-size:10px; color:#c41d7f;">建物想定価格(万円)</label>
+                    <input type="text" id="form-sub-price" class="comma-input">
                 </div>
                 <div id="calc-result-area">
                     <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -168,7 +145,6 @@
 
             <div class="section-title">業者・取引詳細</div>
             <div class="form-group">
-                <label>登録業者名 / 支店名</label>
                 <div class="flex-row" style="margin-bottom:5px;">
                     <input type="text" id="form-gyosha" placeholder="業者名" class="flex-item">
                     <input type="text" id="form-shiten" placeholder="支店名" class="flex-item">
@@ -189,7 +165,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介担当者名"></div>
+                <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="担当者名"></div>
             </div>
 
             <div class="section-title">公法制限・接道</div>
@@ -198,8 +174,19 @@
                     <div class="flex-item"><label>建蔽率 (%)</label><input type="text" id="form-kenpei" class="comma-input"></div>
                     <div class="flex-item"><label>容積率 (%)</label><input type="text" id="form-youseki" class="comma-input"></div>
                 </div>
-                <input type="text" id="form-law" placeholder="１低・１高・準防火など" style="margin-bottom:5px;">
-                <input type="text" id="form-road" placeholder="東側公道◯◯ｍなど">
+                <input type="text" id="form-law" placeholder="用途地域など" style="margin-bottom:5px;">
+                <input type="text" id="form-road" placeholder="道路状況">
+            </div>
+
+            <div class="section-title">交通</div>
+            <div class="form-group">
+                <div class="flex-row" style="margin-bottom:5px;">
+                    <input type="text" id="form-train-line" placeholder="路線名" class="flex-item">
+                    <input type="text" id="form-train-station" placeholder="最寄駅" class="flex-item">
+                </div>
+                <div class="flex-row">
+                    <input type="text" id="form-train-walk" placeholder="徒歩" class="flex-item"><span class="unit-label">分</span>
+                </div>
             </div>
 
             <div class="section-title">備考</div>
@@ -208,8 +195,8 @@
                 <input type="url" id="form-url1" placeholder="https://..." style="margin-bottom:5px;">
                 <input type="url" id="form-url2" placeholder="https://..." style="margin-bottom:5px;">
                 <label>全体メモ</label>
-                <textarea id="form-memo" rows="2" placeholder="全体メモ"></textarea>
-                <input type="text" id="form-user" placeholder="入力担当者名">
+                <textarea id="form-memo" rows="2" placeholder="メモ"></textarea>
+                <input type="text" id="form-user" placeholder="入力担当者">
             </div>
 
             <div class="section-title">仕入分析</div>
@@ -219,18 +206,17 @@
                     <div class="flex-item"><label>根拠</label><select id="siire-basis"><option value="">選択</option><option value="借入額">借入額</option><option value="予想金額">予想金額</option><option value="実績値">実績値</option></select></div>
                 </div>
                 <div class="flex-row">
-                    <input type="text" id="siire-m2" placeholder="土地㎡" class="comma-input flex-item"><span class="unit-label">㎡</span>
-                    <input type="text" id="siire-tsubo" placeholder="坪" class="comma-input flex-item" readonly><span class="unit-label">坪</span>
+                    <input type="text" id="siire-m2" placeholder="土地㎡" class="comma-input flex-item">
+                    <input type="text" id="siire-tsubo" placeholder="坪" class="comma-input flex-item" readonly>
                 </div>
                 <div class="siire-unit-box">
-                    <span style="font-size:11px; color:#52c41a;">仕入坪単価：</span>
                     <span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span>
                 </div>
             </div>
 
-            <button class="btn-save" onclick="submitForm()">この内容で保存する</button>
+            <button class="btn-save" onclick="submitForm()">保存する</button>
             <button class="btn-cancel" onclick="closePanel()">キャンセル</button>
-            <button class="btn-delete" id="delete-btn" onclick="deleteProperty()" style="display:none;">この物件を削除する</button>
+            <button class="btn-delete" id="delete-btn" onclick="deleteProperty()" style="display:none;">削除</button>
         </div>
     </div>
 
@@ -242,17 +228,17 @@
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
       const GAS_URL = "https://script.google.com/macros/s/AKfycbyGOxkWQeQk3EHbFLxGCjbEXiR7lCYkRFY7Qfm3hWEH8_lYi3LM5cPCZMeOOcAS-4yA/exec";
 
-      // HTMLの各IDとGAS側へ送るキーのマッピング（完全版）
+      // 全項目のマッピングを完全に網羅
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
           "form-addr1":"addr1", "form-addr2":"addr2", "form-addr3":"addr3",
-          "form-d-first":"d_first", "form-p-first":"p_first",
-          "form-d-c1":"d_c1", "form-p-c1":"p_c1", "form-d-c2":"d_c2", "form-p-c2":"p_c2",
-          "form-d-c3":"d_c3", "form-p-c3":"p_c3", "form-d-s":"d_s", "form-p-s":"p_s",
-          "form-price-memo":"price_memo", "form-is-sold":"is_sold", "form-t-m2":"t_m2", "form-t-tsubo":"t_tsubo",
-          "form-b-m2":"b_m2", "form-b-tsubo":"b_tsubo", "form-layout":"layout", "form-sub-price":"sub_p",
-          "form-gyosha":"gyosha", "form-shiten":"shiten", "form-taiyou":"taiyou", "form-media":"media", "form-intro-user":"intro_user",
+          "form-d-first":"d_first", "form-p-first":"p_first", "form-d-c1":"d_c1", "form-p-c1":"p_c1", "form-d-c2":"d_c2", "form-p-c2":"p_c2", "form-d-c3":"d_c3", "form-p-c3":"p_c3",
+          "form-d-s":"d_s", "form-p-s":"p_s", "form-price-memo":"price_memo", "form-is-sold":"is_sold",
+          "form-t-m2":"t_m2", "form-t-tsubo":"t_tsubo", "form-b-m2":"b_m2", "form-b-tsubo":"b_tsubo",
+          "form-layout":"layout", "form-sub-price":"sub_p", "form-gyosha":"gyosha", "form-shiten":"shiten",
+          "form-taiyou":"taiyou", "form-media":"media", "form-intro-user":"intro_user",
           "form-kenpei":"kenpei", "form-youseki":"youseki", "form-law":"law", "form-road":"road",
+          "form-train-line":"train_line", "form-train-station":"train_station", "form-train-walk":"train_walk",
           "form-url1":"url1", "form-url2":"url2", "form-memo":"memo", "form-user":"user",
           "siire-price":"siire_p", "siire-m2":"siire_m2", "siire-basis":"siire_basis"
       };
@@ -277,6 +263,38 @@
 
       let map, sharedInfoWindow, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
+
+      async function initMap() {
+        const { Map, InfoWindow } = google.maps;
+        map = new Map(document.getElementById("map"), { center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID, disableDoubleClickZoom: true });
+        sharedInfoWindow = new InfoWindow(); geocoder = new google.maps.Geocoder();
+        
+        map.addListener("click", () => { 
+            if(currentEditingMarker && !currentEditingMarker.rowId) return; 
+            sharedInfoWindow.close(); closePanel(); 
+        });
+        map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
+        document.getElementById("editor-panel").style.setProperty("display", "none", "important");
+        loadMarkers();
+      }
+
+      function fetchAddressByCoords(lat, lng) {
+          geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+              if (status === "OK" && results[0]) {
+                  const comps = results[0].address_components;
+                  let city = "", chome = "", banchi = "";
+                  for (const comp of comps) {
+                      if (comp.types.includes("locality")) city = comp.long_name;
+                      if (comp.types.includes("sublocality_level_4")) chome = comp.long_name;
+                      if (comp.types.includes("sublocality_level_5")) banchi = comp.long_name;
+                  }
+                  document.getElementById("form-addr1").value = city;
+                  document.getElementById("form-addr2").value = chome;
+                  document.getElementById("form-addr3").value = banchi;
+                  saveCurrentTabData();
+              }
+          });
+      }
 
       function getMarkerContent(type, isSold) {
           const img = document.createElement("img");
@@ -306,33 +324,64 @@
           return input;
       }
 
-      async function initMap() {
-        const { Map, InfoWindow } = google.maps;
-        map = new Map(document.getElementById("map"), { center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID, disableDoubleClickZoom: true });
-        sharedInfoWindow = new InfoWindow(); geocoder = new google.maps.Geocoder();
-        map.addListener("click", () => { sharedInfoWindow.close(); closePanel(); });
-        map.addListener("dblclick", (e) => { addNewProperty(e.latLng.lat(), e.latLng.lng()); });
-        document.getElementById("address-input").addEventListener("keypress", (e) => { if(e.key === "Enter") executeSearch(); });
-        
-        document.getElementById("editor-panel").style.setProperty("display", "none", "important");
-        loadMarkers();
-      }
+      window.addNewProperty = (lat, lng) => {
+        if(currentEditingMarker && !currentEditingMarker.rowId) currentEditingMarker.map = null;
+        const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true });
+        currentEditingMarker = marker;
+        currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng, tab_name: "区画1" } }];
+        activeTabIndex = 0; 
 
-      function executeSearch() {
-          const address = document.getElementById("address-input").value;
-          if(!address) return;
-          geocoder.geocode({ address: address }, (results, status) => {
-              if (status === "OK" && results[0]) {
-                  const loc = results[0].geometry.location;
-                  map.setCenter(loc); map.setZoom(17);
-                  addNewProperty(loc.lat(), loc.lng());
-              } else { alert("住所が見つかりませんでした"); }
-          });
-      }
+        document.getElementById('val-land').innerText = "- 万円";
+        document.getElementById('val-siire-unit').innerText = "- 万円";
+        
+        marker.addListener('dragend', (e) => {
+            const newPos = e.latLng;
+            currentTabs[activeTabIndex].data.lat = newPos.lat();
+            currentTabs[activeTabIndex].data.lng = newPos.lng();
+            fetchAddressByCoords(newPos.lat(), newPos.lng());
+        });
+
+        fetchAddressByCoords(lat, lng);
+        loadTabData(currentTabs[0].data); renderTabs();
+        document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+      };
+
+      window.openEdit = (id) => {
+        const r = allData.find(d => String(d["ID"]) === String(id));
+        if (!r) return;
+        const marker = markersList.find(m => m.rowId === id);
+        if(marker) { 
+            marker.gmpDraggable = true; currentEditingMarker = marker;
+            marker.addListener('dragend', (e) => {
+                const newPos = e.latLng;
+                currentTabs[activeTabIndex].data.lat = newPos.lat();
+                currentTabs[activeTabIndex].data.lng = newPos.lng();
+                fetchAddressByCoords(newPos.lat(), newPos.lng());
+            });
+        }
+        
+        currentTabs = [{ label: r["区画名"] || "区画1", data: {} }];
+        const sheetToKey = {
+            "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name",
+            "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
+            "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first",
+            "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2",
+            "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s",
+            "価格推移備考":"price_memo", "成約フラグ":"is_sold", "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo",
+            "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p",
+            "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
+            "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road", 
+            "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk",
+            "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
+            "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis"
+        };
+        Object.keys(sheetToKey).forEach(s => currentTabs[0].data[sheetToKey[s]] = r[s]);
+        activeTabIndex = 0; loadTabData(currentTabs[0].data); renderTabs();
+        document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+      };
 
       function renderTabs() {
-        const bar = document.getElementById("tab-bar");
-        bar.innerHTML = "";
+        const bar = document.getElementById("tab-bar"); bar.innerHTML = "";
         currentTabs.forEach((tab, index) => {
             const el = document.createElement("div");
             el.className = `tab ${index === activeTabIndex ? 'active' : ''}`;
@@ -340,27 +389,19 @@
             el.onclick = (e) => { e.stopPropagation(); switchTab(index); };
             bar.appendChild(el);
         });
-        const addBtn = document.createElement("div");
-        addBtn.className = "tab tab-add";
-        addBtn.innerText = "＋追加";
-        addBtn.onclick = (e) => { e.stopPropagation(); addTab(); };
-        bar.appendChild(addBtn);
+        const addBtn = document.createElement("div"); addBtn.className = "tab tab-add"; addBtn.innerText = "＋追加";
+        addBtn.onclick = (e) => { e.stopPropagation(); addTab(); }; bar.appendChild(addBtn);
       }
 
-      function switchTab(index) {
-        saveCurrentTabData(); activeTabIndex = index;
-        loadTabData(currentTabs[index].data); renderTabs();
-      }
+      function switchTab(index) { saveCurrentTabData(); activeTabIndex = index; loadTabData(currentTabs[index].data); renderTabs(); }
 
       function addTab() {
         saveCurrentTabData();
         const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
         baseData.id = ""; baseData.tab_name = `区画${currentTabs.length + 1}`;
-        // 金額や面積など、新規区画として空にすべき項目をリセット
         ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold"].forEach(k => baseData[k] = "");
         currentTabs.push({ label: baseData.tab_name, data: baseData });
-        activeTabIndex = currentTabs.length - 1;
-        loadTabData(baseData); renderTabs();
+        activeTabIndex = currentTabs.length - 1; loadTabData(baseData); renderTabs();
       }
 
       function saveCurrentTabData() {
@@ -391,7 +432,6 @@
       function updateAutoFields() {
         const type = document.getElementById('form-type').value;
         const pFirst = parseFloat(removeComma(document.getElementById('form-p-first').value)) || 0;
-        const pS = parseFloat(removeComma(document.getElementById('form-p-s').value)) || 0;
         const subP = parseFloat(removeComma(document.getElementById('form-sub-price').value)) || 0;
         const lTsubo = parseFloat(removeComma(document.getElementById('form-t-tsubo').value)) || 0;
         const siireP = parseFloat(removeComma(document.getElementById('siire-price').value)) || 0;
@@ -399,56 +439,12 @@
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         document.getElementById('siire-tsubo').value = formatNumberWithComma(sTsubo, 2);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
-        
-        const currentP = pS || parseFloat(removeComma(document.getElementById('form-p-c3').value)) || parseFloat(removeComma(document.getElementById('form-p-c2').value)) || parseFloat(removeComma(document.getElementById('form-p-c1').value)) || pFirst;
-        const ratio = pFirst > 0 ? (currentP / pFirst) : 1;
-        const fmt = (n) => n.toLocaleString(undefined, {maximumFractionDigits: 1});
-
-        document.getElementById('build-price-input').style.display = "none";
-        document.getElementById('calc-result-area').style.display = "block";
-        document.getElementById('label-land').innerText = "土地坪単価：";
-        if (["新築戸建", "中古戸建", "自社新築", "自社中古", "自社新築(情開)", "自社中古(情開)"].includes(type)) {
-            document.getElementById('build-price-input').style.display = "block";
-            if (subP > 0 && lTsubo > 0) document.getElementById('val-land').innerText = fmt(((pFirst - subP) / lTsubo) * ratio) + " 万円";
-        } else if (lTsubo > 0) {
-            document.getElementById('val-land').innerText = fmt((pFirst / lTsubo) * ratio) + " 万円";
+        document.getElementById('build-price-input').style.display = (type.includes("戸建") || type.includes("自社")) ? "block" : "none";
+        if (lTsubo > 0) {
+            const lp = type.includes("戸建") ? (pFirst - subP) : pFirst;
+            document.getElementById('val-land').innerText = (lp / lTsubo).toLocaleString(undefined, {maximumFractionDigits: 1}) + " 万円";
         }
       }
-
-      window.addNewProperty = (lat, lng) => {
-        if(currentEditingMarker && !currentEditingMarker.rowId) currentEditingMarker.map = null;
-        const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true });
-        currentEditingMarker = marker;
-        currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng, tab_name: "区画1" } }];
-        activeTabIndex = 0; loadTabData(currentTabs[0].data); renderTabs();
-        document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
-      };
-
-      window.openEdit = (id) => {
-        const r = allData.find(d => String(d["ID"]) === String(id));
-        if (!r) return;
-        const marker = markersList.find(m => m.rowId === id);
-        if(marker) { marker.gmpDraggable = true; currentEditingMarker = marker; }
-        currentTabs = [{ label: r["区画名"] || "区画1", data: {} }];
-        
-        // シートのヘッダー名から内部キーへのマッピング（既存データ読み込み用）
-        const sheetToKey = {
-            "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name",
-            "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
-            "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first",
-            "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2",
-            "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s",
-            "価格推移備考":"price_memo", "成約フラグ":"is_sold", "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo",
-            "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p",
-            "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
-            "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road", "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
-            "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis"
-        };
-        Object.keys(sheetToKey).forEach(s => currentTabs[0].data[sheetToKey[s]] = r[s]);
-        
-        activeTabIndex = 0; loadTabData(currentTabs[0].data); renderTabs();
-        document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
-      };
 
       window.submitForm = async () => {
         saveCurrentTabData();
@@ -464,6 +460,13 @@
         } catch (e) { alert("保存失敗"); btn.disabled = false; btn.innerText = "保存する"; }
       };
 
+      window.executeSearch = () => {
+          const addr = document.getElementById("address-input").value;
+          geocoder.geocode({ address: addr }, (res, status) => {
+              if (status === "OK") { map.setCenter(res[0].geometry.location); addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); }
+          });
+      };
+
       window.deleteProperty = async () => {
           if(!confirm("削除しますか？")) return;
           const id = document.getElementById("form-id").value;
@@ -472,14 +475,10 @@
               await fetch(GAS_URL, { method: "POST", body: JSON.stringify({id: id, mode: "delete"}) });
               location.reload();
           } catch (e) { alert("削除失敗"); btn.disabled = false; }
-      }
+      };
 
       window.closePanel = () => {
-          if(currentEditingMarker) {
-              currentEditingMarker.gmpDraggable = false;
-              if(!currentEditingMarker.rowId) currentEditingMarker.map = null;
-              currentEditingMarker = null;
-          }
+          if(currentEditingMarker && !currentEditingMarker.rowId) currentEditingMarker.map = null;
           document.getElementById("editor-panel").style.setProperty("display", "none", "important");
           document.getElementById("address-input").value = "";
       };
