@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.9.8</title>
+    <title>不動産管理マップ v4.9.9</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -258,16 +258,17 @@
 
       let map, sharedInfoWindow, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
-      let isDragging = false; // ドラッグ中フラグ
+      let isDragging = false; 
+      let dragLock = false; // ★ドラッグ直後の誤作動防止用ロック
 
       async function initMap() {
         const { Map, InfoWindow } = google.maps;
         map = new Map(document.getElementById("map"), { center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID, disableDoubleClickZoom: true });
         sharedInfoWindow = new InfoWindow(); geocoder = new google.maps.Geocoder();
         
-        // ★修正：地図クリックでパネルを閉じる（ドラッグ中や新規入力中は保護）
         map.addListener("click", (e) => { 
-            if(isDragging) return;
+            // ロック中、ドラッグ中、新規マーカー入力中の場合は閉じない
+            if(dragLock || isDragging) return;
             if(currentEditingMarker && !currentEditingMarker.rowId) return; 
             sharedInfoWindow.close(); closePanel(); 
         });
@@ -315,16 +316,16 @@
         currentEditingMarker = marker;
         currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng, tab_name: "区画1" } }];
         activeTabIndex = 0; 
-        document.getElementById('val-land').innerText = "- 万円";
-        document.getElementById('val-siire-unit').innerText = "- 万円";
-        
-        marker.addListener('dragstart', () => { isDragging = true; }); 
+
+        marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
         marker.addListener('dragend', (e) => {
             isDragging = false; 
             const newPos = e.latLng;
             currentTabs[activeTabIndex].data.lat = newPos.lat();
             currentTabs[activeTabIndex].data.lng = newPos.lng();
             fetchAddress(newPos.lat(), newPos.lng());
+            // ★ドラッグ終了後、少し待ってからクリック判定を有効化
+            setTimeout(() => { dragLock = false; }, 200);
         });
 
         fetchAddress(lat, lng);
@@ -342,13 +343,16 @@
         const marker = markersList.find(m => m.rowId === id);
         if(marker) { 
             marker.gmpDraggable = true; currentEditingMarker = marker;
-            marker.addListener('dragstart', () => { isDragging = true; }); 
+            // リスナーの重複登録を避けるため一度リセット（または既に設定済みなら無視）が理想的ですが
+            // AdvancedMarkerElementの場合はイベントを再定義
+            marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
             marker.addListener('dragend', (e) => {
                 isDragging = false; 
                 const newPos = e.latLng;
                 currentTabs[activeTabIndex].data.lat = newPos.lat();
                 currentTabs[activeTabIndex].data.lng = newPos.lng();
                 fetchAddress(newPos.lat(), newPos.lng());
+                setTimeout(() => { dragLock = false; }, 200);
             });
         }
         
@@ -497,14 +501,15 @@
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) }, map: map, content: img });
             marker.rowId = String(row["ID"]);
             
-            marker.addListener("click", (e) => {
-                e.stop(); const fmt = (v) => v ? Number(v).toLocaleString() : "-";
+            // ★修正：DOM要素（img）に直接リスナーを付けてバブリングを防ぎ、動作を確実に
+            img.addEventListener("click", (e) => {
+                e.stopPropagation(); 
+                const fmt = (v) => v ? Number(v).toLocaleString() : "-";
                 sharedInfoWindow.setContent(`<div style="min-width:200px; padding:10px;"><strong>${row["物件名称"] || "未設定"}</strong> (${row["区画名"] || "-"})<br>価格: ${fmt(row["販売価格（初回入力時/万円）"])}万円<br><button onclick="openEdit('${marker.rowId}')" style="margin-top:10px; width:100%;">編集</button></div>`);
                 sharedInfoWindow.open(map, marker);
             });
-            // ★修正：既存物件のダブルクリックでの編集起動を確実に
-            marker.addListener("dblclick", (e) => { 
-                e.stop(); 
+            img.addEventListener("dblclick", (e) => { 
+                e.stopPropagation(); 
                 openEdit(marker.rowId); 
             });
             
