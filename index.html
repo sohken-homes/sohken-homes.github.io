@@ -240,7 +240,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbw9UqJp4Z2iWnocraWaoRrOKRyPtZ0fQ0FfVE-MUZPzzx-K_pww4z2BwqAtjOgCRYJC/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxB110pOYk3MHyoN4mHT7GZS3WdR0QKkk6Ry-6mQ7iDhJ5pXIFa7wBFfdGZfvZMyLbh/exec";
 
       const ICON_MAP = {
           "新築戸建": "https://sohken-homes.github.io/icon_new_house.png",
@@ -490,12 +490,14 @@
         document.getElementById("form-container").scrollTop = 0;
       };
 
-      window.openEdit = (id) => {
+	window.openEdit = (id) => {
         const r = allData.find(d => String(d["ID"]) === String(id));
         if (!r) return;
         const marker = markersList.find(m => m.rowId === id);
         if(marker) setMarkerDraggable(marker);
         currentTabs = [{ label: "編集", data: {} }];
+        
+        // シートの列名とHTML側のキーを1対1で紐付け
         const mapping = {
             "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "区画名":"name",
             "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
@@ -510,6 +512,7 @@
             "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis"
         };
         Object.keys(mapping).forEach(k => currentTabs[0].data[mapping[k]] = r[k]);
+        
         activeTabIndex = 0;
         loadTabData(currentTabs[0].data);
         renderTabs();
