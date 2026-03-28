@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.6.0</title>
+    <title>不動産管理マップ v4.6.1</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -32,7 +32,6 @@
         .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; margin-top: 5px; text-align: center; }
         .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
-        /* 読み取り専用の坪表示用 */
         input[readonly] { background-color: #f5f5f5; color: #888; border: 1px solid #eee; }
     </style>
 </head>
@@ -71,18 +70,18 @@
         <div class="form-group">
             <label>初回入力日 / 初回価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-first" placeholder="****/**/**または**/**の形式" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-first" placeholder="価格（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-first" placeholder="yyyy/mm/dd" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-first" placeholder="初回価格" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <label>変更日１ / 変更1価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-c1" placeholder="****/**/**または**/**の形式" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-c1" placeholder="変更価格１（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-c1" placeholder="yyyy/mm/dd" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-c1" placeholder="変更価格１" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <label>変更日２ / 変更2価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-c2" placeholder="****/**/**または**/**の形式" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-c2" placeholder="変更価格２（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-c2" placeholder="yyyy/mm/dd" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-c2" placeholder="変更価格２" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="margin:0;">成約日 / 成約価格</label>
@@ -93,7 +92,7 @@
                 <input type="text" id="form-p-s" placeholder="成約価格" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <label>価格推移 備考/補足</label>
-            <textarea id="form-price-memo" rows="3" placeholder="価格変更の理由・効果など/３回以上の価格変更の際の履歴など。その場合は最新の価格変更を上記「変更２」に入力しその途中をここに入力する"></textarea>
+            <textarea id="form-price-memo" rows="3" placeholder="理由や履歴など"></textarea>
        </div>
 
         <div class="section-title">面積詳細</div>
@@ -143,18 +142,23 @@
                 <div class="flex-item"><label>取引態様</label><select id="form-taiyou"><option value="">選択</option><option value="売主">売主</option><option value="仲介(専)">仲介(専)</option><option value="仲介(一般)">仲介(一般)</option><option value="販売代理">販売代理</option></select></div>
                 <div class="flex-item"><label>登録媒体</label><select id="form-media"><option value="">選択</option><option value="レインズ">レインズ</option><option value="仲介HP">仲介HP</option><option value="売主HP">売主HP</option><option value="ポータルサイト">ポータルサイト</option><option value="紹介">紹介</option><option value="その他">その他</option></select></div>
             </div>
-            <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介者/物件担当者の氏名など"></div>
+            <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介者の氏名など"></div>
         </div>
 
         <div class="section-title">公法制限・接道</div>
-        <div class="flex-row form-group">
-            <div class="flex-item"><label>建蔽率</label><div class="flex-row"><input type="text" id="form-kenpei" class="comma-input" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">%</span></div></div>
-            <div class="flex-item"><label>容積率</label><div class="flex-row"><input type="text" id="form-youseki" class="comma-input" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">%</span></div></div>
+        <div class="form-group">
+            <div class="flex-row" style="margin-bottom:5px;">
+                <div class="flex-item"><label>建蔽率</label><div class="flex-row"><input type="text" id="form-kenpei" class="comma-input" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">%</span></div></div>
+                <div class="flex-item"><label>容積率</label><div class="flex-row"><input type="text" id="form-youseki" class="comma-input" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">%</span></div></div>
+            </div>
+            <label>用途地域</label>
+            <input type="text" id="form-law" placeholder="第1種低層など" style="margin-bottom:5px;">
+            <label>接道状況</label>
+            <input type="text" id="form-road" placeholder="東側公道◯◯ｍなど">
         </div>
-        <div class="form-group"><label>用途地域</label><div class="flex-row"><input type="text" id="form-law" placeholder="１低・１高・準防火など" style="margin-bottom:5px;"><label>接道状況</label><div class="flex-row"><input type="text" id="form-road" placeholder="東側公道◯◯ｍなど"></div>
 
         <div class="section-title">備考・URL・入力者</div>
-        <div class="form-group"><label>参考URL</label><input type="url" id="form-url1" placeholder="https://・・・" style="margin-bottom:5px;"><input type="url" id="form-url2" placeholder="https://・・・"></div>
+        <div class="form-group"><label>参考URL</label><input type="url" id="form-url1" style="margin-bottom:5px;"><input type="url" id="form-url2"></div>
         <div class="form-group"><label>全体メモ</label><textarea id="form-memo" rows="2" placeholder="メモ"></textarea></div>
         <div class="form-group"><label>入力者</label><input type="text" id="form-user" placeholder="担当者名"></div>
 
@@ -285,7 +289,6 @@
         const siireP = parseFloat(removeComma(document.getElementById('siire-price').value)) || 0;
         const siireM2 = parseFloat(removeComma(document.getElementById('siire-m2').value)) || 0;
         
-        // 仕入単価・坪計算 (小数点2位)
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         document.getElementById('siire-tsubo').value = formatNumberWithComma(sTsubo, 2);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
@@ -444,7 +447,6 @@
         document.querySelectorAll('.comma-input').forEach(el => {
             el.addEventListener('focus', (e) => e.target.value = removeComma(e.target.value));
             el.addEventListener('blur', (e) => {
-                // 坪数(readonly)以外のカンマ入力要素に適用
                 if (!e.target.readOnly) {
                     e.target.value = formatNumberWithComma(e.target.value);
                 }
@@ -464,7 +466,6 @@
         const sync = (m2, tsubo) => {
             document.getElementById(m2).addEventListener('blur', (e) => {
                 const v = removeComma(e.target.value);
-                // 坪数は小数点2位まで固定表示
                 if(v) document.getElementById(tsubo).value = formatNumberWithComma(Math.floor((v * 0.3025) * 100) / 100, 2);
                 updateAutoFields();
             });
