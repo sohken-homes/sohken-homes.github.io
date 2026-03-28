@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.3.6</title>
+    <title>不動産管理マップ v4.5.4 (Integrated)</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -25,14 +25,18 @@
         .unit-label { font-size: 12px; color: #888; white-space: nowrap; width: 25px; }
         
         .sold-check-container { display: flex; align-items: center; gap: 8px; background: #fff1f0; padding: 10px; border-radius: 8px; border: 1px solid #ffa39e; margin-bottom: 10px; }
-        .sold-check-container input { width: 20px; height: 20px; cursor: pointer; margin: 0; }
+        .sold-check-container input { width: 24px; height: 24px; cursor: pointer; margin: 0; }
         .sold-check-container span { font-size: 14px; font-weight: bold; color: #cf1322; }
 
         #unit-price-container { background: #fffbe6; padding: 12px; border-radius: 8px; border: 1px solid #ffe58f; margin-top: 10px; }
         .price-display { font-size: 16px; font-weight: bold; color: #d93025; }
         .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; margin-top: 5px; text-align: center; }
+        
         .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
+        .btn-save:disabled { background: #ccc; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
+        
+        input::placeholder { color: #ccc; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -88,22 +92,22 @@
         <div class="form-group">
             <label>成約日 / 成約価格</label>
             <div class="flex-row" style="margin-bottom:10px;">
-                <input type="text" id="form-d-s" placeholder="mm/dd" class="flex-item">
+                <input type="text" id="form-d-s" placeholder="mm/dd" class="flex-item date-input">
                 <input type="text" id="form-p-s" placeholder="成約価格" class="comma-input flex-item">
             </div>
             <label>初回日 / 初回価格</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-d-first" placeholder="mm/dd" class="flex-item">
+                <input type="text" id="form-d-first" placeholder="mm/dd" class="flex-item date-input">
                 <input type="text" id="form-p-first" placeholder="価格" class="comma-input flex-item">
             </div>
             <label>変更1日 / 変更1価格</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-d-c1" placeholder="mm/dd" class="flex-item">
+                <input type="text" id="form-d-c1" placeholder="mm/dd" class="flex-item date-input">
                 <input type="text" id="form-p-c1" placeholder="価格" class="comma-input flex-item">
             </div>
             <label>変更2日 / 変更2価格</label>
             <div class="flex-row" style="margin-bottom:5px;">
-                <input type="text" id="form-d-c2" placeholder="mm/dd" class="flex-item">
+                <input type="text" id="form-d-c2" placeholder="mm/dd" class="flex-item date-input">
                 <input type="text" id="form-p-c2" placeholder="価格" class="comma-input flex-item">
             </div>
         </div>
@@ -143,7 +147,7 @@
             </div>
         </div>
 
-        <div class="section-title">業者・その他</div>
+        <div class="section-title">業者・取引詳細</div>
         <div class="form-group">
             <label>登録業者名 / 支店名</label>
             <div class="flex-row" style="margin-bottom:5px;">
@@ -170,7 +174,7 @@
             <input type="url" id="form-url2" placeholder="参考URL 2">
         </div>
         <div class="form-group"><label>全体メモ</label><textarea id="form-memo" rows="2"></textarea></div>
-        <div class="form-group"><label>入力者（必須）</label><input type="text" id="form-user" placeholder="氏名を入力してください"></div>
+        <div class="form-group"><label>入力者</label><input type="text" id="form-user" placeholder="担当者名"></div>
 
         <div class="section-title">仕入単価分析</div>
         <div class="form-group">
@@ -241,6 +245,7 @@
 
       let map, sharedInfoWindow, allData = [];
 
+      // --- ユーティリティ (V4.5.3準拠) ---
       function toFullDate(val) {
           if (!val) return "";
           if (/^\d{4}\//.test(val)) return val;
@@ -267,6 +272,7 @@
           el.addEventListener('blur', () => { el.value = formatNumberWithComma(el.value); updateAutoFields(); });
       }
 
+      // --- 初期化 ---
       async function initMap() {
         const { Map, InfoWindow } = google.maps;
         map = new Map(document.getElementById("map"), { center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID });
@@ -320,6 +326,7 @@
           return img;
       }
 
+      // --- V4.5.3 高度な住所パース & フィールド連動 ---
       function updateAutoFields() {
         const type = document.getElementById('form-type').value;
         const pFirst = parseFloat(removeComma(document.getElementById('form-p-first').value)) || 0;
@@ -330,10 +337,12 @@
         const siireP = parseFloat(removeComma(document.getElementById('siire-price').value)) || 0;
         const siireM2 = parseFloat(removeComma(document.getElementById('siire-m2').value)) || 0;
 
+        // 仕入単価計算
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         document.getElementById('siire-tsubo').value = formatNumberWithComma(sTsubo);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
 
+        // 販売単価計算 (成約価格 > 変更2 > 変更1 > 初回の優先順)
         const currentP = pS || parseFloat(removeComma(document.getElementById('form-p-c2').value)) || parseFloat(removeComma(document.getElementById('form-p-c1').value)) || pFirst;
         const ratio = pFirst > 0 ? (currentP / pFirst) : 1;
         const fmt = (n) => n.toLocaleString(undefined, {maximumFractionDigits: 1});
@@ -362,17 +371,39 @@
 
       window.addEventListener('load', () => {
         document.querySelectorAll('.comma-input').forEach(el => handleNumericInput(el));
+        
+        // 住所パース: 丁目入力で次にフォーカス & 記号変換
+        document.getElementById('form-addr2').addEventListener('input', (e) => {
+            if(e.target.value.includes('丁目')) {
+                e.target.value = e.target.value.replace('丁目','');
+                document.getElementById('form-addr3').focus();
+            }
+        });
+        
+        // 成約フラグ自動連動
+        document.getElementById('form-d-s').addEventListener('input', (e) => {
+            document.getElementById('form-is-sold').checked = !!e.target.value;
+        });
+
+        // 面積相互変換
         const syncArea = (m2Id, tsuboId) => {
             document.getElementById(m2Id).addEventListener('blur', (e) => {
                 const v = removeComma(e.target.value);
                 if(v) document.getElementById(tsuboId).value = formatNumberWithComma(Math.floor((v * 0.3025) * 100) / 100);
                 updateAutoFields();
             });
+            document.getElementById(tsuboId).addEventListener('blur', (e) => {
+                const v = removeComma(e.target.value);
+                if(v) document.getElementById(m2Id).value = formatNumberWithComma(Math.floor((v / 0.3025) * 100) / 100);
+                updateAutoFields();
+            });
         };
-        syncArea('form-t-m2', 'form-t-tsubo'); syncArea('form-b-m2', 'form-b-tsubo'); syncArea('siire-m2', 'siire-tsubo');
+        syncArea('form-t-m2', 'form-t-tsubo'); syncArea('form-b-m2', 'form-b-tsubo');
+        document.getElementById('siire-m2').addEventListener('blur', updateAutoFields);
         document.getElementById('form-type').addEventListener('change', updateAutoFields);
       });
 
+      // --- パネル操作 ---
       window.addNewProperty = (lat, lng) => {
         document.getElementById("form-id").value = "";
         document.getElementById("form-lat").value = lat;
@@ -400,6 +431,7 @@
         document.getElementById("form-lat").value = r["緯度"];
         document.getElementById("form-lng").value = r["経度"];
         document.getElementById("form-is-sold").checked = (r["成約フラグ"] === true || r["成約フラグ"] === "TRUE");
+        
         setV("form-type", r["物件種別"]); setV("form-name", r["区画名"]);
         setV("form-addr1", r["市・区"]); setV("form-addr2", r["所在（丁目まで）"]); setV("form-addr3", r["住居表示（丁目以降）"]);
         setV("form-d-first", r["初回価格入力日"], true); setV("form-p-first", r["販売価格（初回入力時/万円）"]);
@@ -418,6 +450,7 @@
         setV("form-memo", r["メモ"]); 
         setV("form-user", r["入力者"]); 
         setV("siire-price", r["購入価格"]); setV("siire-m2", r["仕入土地面積"]); setV("siire-basis", r["購入根拠"]);
+        
         updateAutoFields();
         document.getElementById("editor-panel").style.display = "block";
         sharedInfoWindow.close();
@@ -450,13 +483,15 @@
           siire_unit: removeComma(document.getElementById("val-siire-unit").innerText.replace(" 万円",""))
         };
         
-        if(!data.user) { alert("入力者名を入力してください"); return; }
-        
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         try {
-            await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
-            location.reload();
-        } catch (e) { alert("保存失敗"); btn.disabled = false; btn.innerText = "保存する"; }
+            const response = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
+            if(response.ok) {
+                location.reload();
+            } else {
+                throw new Error();
+            }
+        } catch (e) { alert("保存に失敗しました。ネットワーク状況を確認してください。"); btn.disabled = false; btn.innerText = "保存する"; }
       };
       window.closePanel = () => document.getElementById("editor-panel").style.display = "none";
     </script>
