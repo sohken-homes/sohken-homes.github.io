@@ -69,20 +69,20 @@
 
         <div class="section-title">価格推移 (単位: 万円)</div>
         <div class="form-group">
-            <label>初回日 / 初回価格</label>
+            <label>初回入力日 / 初回価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-first" placeholder="yyyy/mm/dd" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-first" placeholder="価格" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-first" placeholder="****/**/**または**/**の形式" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-first" placeholder="価格（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
-            <label>変更1日 / 変更1価格</label>
+            <label>変更日１ / 変更1価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-c1" placeholder="変更日1" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-c1" placeholder="価格1" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-c1" placeholder="****/**/**または**/**の形式" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-c1" placeholder="変更価格１（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
-            <label>変更2日 / 変更2価格</label>
+            <label>変更日２ / 変更2価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-c2" placeholder="変更日2" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-c2" placeholder="価格2" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-c2" placeholder="****/**/**または**/**の形式" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-c2" placeholder="変更価格２（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="margin:0;">成約日 / 成約価格</label>
@@ -93,8 +93,8 @@
                 <input type="text" id="form-p-s" placeholder="成約価格" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <label>価格推移 備考/補足</label>
-            <input type="text" id="form-price-memo" placeholder="価格変更の理由など">
-        </div>
+            <textarea id="form-price-memo" rows="3" placeholder="価格変更の理由・効果など/３回以上の価格変更の際の履歴など。その場合は最新の価格変更を上記「変更２」に入力しその途中をここに入力する"></textarea>
+       </div>
 
         <div class="section-title">面積詳細</div>
         <div class="form-group">
@@ -110,7 +110,7 @@
                 <input type="text" id="form-b-m2" placeholder="0.00" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">㎡</span>
                 <input type="text" id="form-b-tsubo" placeholder="0.00" class="comma-input flex-item" readonly><span class="unit-label">坪</span>
             </div>
-            <input type="text" id="form-layout" placeholder="4LDK">
+            <input type="text" id="form-layout" placeholder="4LDKなど">
         </div>
 
         <div class="section-title">単価計算（自動反映）</div>
@@ -143,7 +143,7 @@
                 <div class="flex-item"><label>取引態様</label><select id="form-taiyou"><option value="">選択</option><option value="売主">売主</option><option value="仲介(専)">仲介(専)</option><option value="仲介(一般)">仲介(一般)</option><option value="販売代理">販売代理</option></select></div>
                 <div class="flex-item"><label>登録媒体</label><select id="form-media"><option value="">選択</option><option value="レインズ">レインズ</option><option value="仲介HP">仲介HP</option><option value="売主HP">売主HP</option><option value="ポータルサイト">ポータルサイト</option><option value="紹介">紹介</option><option value="その他">その他</option></select></div>
             </div>
-            <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介者の氏名など"></div>
+            <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介者/物件担当者の氏名など"></div>
         </div>
 
         <div class="section-title">公法制限・接道</div>
@@ -151,10 +151,10 @@
             <div class="flex-item"><label>建蔽率</label><div class="flex-row"><input type="text" id="form-kenpei" class="comma-input" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">%</span></div></div>
             <div class="flex-item"><label>容積率</label><div class="flex-row"><input type="text" id="form-youseki" class="comma-input" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">%</span></div></div>
         </div>
-        <div class="form-group"><input type="text" id="form-law" placeholder="用途地域" style="margin-bottom:5px;"><input type="text" id="form-road" placeholder="接道状況"></div>
+        <div class="form-group"><label>用途地域</label><div class="flex-row"><input type="text" id="form-law" placeholder="１低・１高・準防火など" style="margin-bottom:5px;"><label>接道状況</label><div class="flex-row"><input type="text" id="form-road" placeholder="東側公道◯◯ｍなど"></div>
 
         <div class="section-title">備考・URL・入力者</div>
-        <div class="form-group"><label>参考URL</label><input type="url" id="form-url1" style="margin-bottom:5px;"><input type="url" id="form-url2"></div>
+        <div class="form-group"><label>参考URL</label><input type="url" id="form-url1" placeholder="https://・・・" style="margin-bottom:5px;"><input type="url" id="form-url2" placeholder="https://・・・"></div>
         <div class="form-group"><label>全体メモ</label><textarea id="form-memo" rows="2" placeholder="メモ"></textarea></div>
         <div class="form-group"><label>入力者</label><input type="text" id="form-user" placeholder="担当者名"></div>
 
