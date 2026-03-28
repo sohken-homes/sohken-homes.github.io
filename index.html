@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.7.6</title>
+    <title>不動産管理マップ v4.7.7</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -110,32 +110,32 @@
                 <label>初回入力日 / 初回価格</label>
                 <div class="flex-row" style="margin-bottom:8px;">
                     <input type="text" id="form-d-first" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
-                    <input type="text" id="form-p-first" placeholder="価格" class="comma-input flex-item">
+                    <input type="text" id="form-p-first" placeholder="初回価格" class="comma-input flex-item">
                 </div>
                 <label>変更日１ / 価格１</label>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-c1" class="flex-item date-input">
-                    <input type="text" id="form-p-c1" class="comma-input flex-item">
+                    <input type="text" id="form-d-c1" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
+                    <input type="text" id="form-p-c1" placeholder="変更価格１" class="comma-input flex-item">
                 </div>
                 <label>変更日２ / 価格２</label>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-c2" class="flex-item date-input">
-                    <input type="text" id="form-p-c2" class="comma-input flex-item">
+                    <input type="text" id="form-d-c2" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
+                    <input type="text" id="form-p-c2" placeholder="変更価格２" class="comma-input flex-item">
                 </div>
                 <label>変更日３ / 価格３</label>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-c3" class="flex-item date-input">
-                    <input type="text" id="form-p-c3" class="comma-input flex-item">
+                    <input type="text" id="form-d-c3" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
+                    <input type="text" id="form-p-c3" placeholder="変更価格３" class="comma-input flex-item">
                 </div>
                 <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
                     <label style="margin:0;">成約日 / 成約価格</label>
                     <div class="sold-inline"><input type="checkbox" id="form-is-sold"> 成約済</div>
                 </div>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <input type="text" id="form-d-s" class="flex-item date-input">
-                    <input type="text" id="form-p-s" class="comma-input flex-item">
+                    <input type="text" id="form-d-s" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input">
+                    <input type="text" id="form-p-s" placeholder="成約価格" class="comma-input flex-item">
                 </div>
-                <label>備考/補足</label>
+                <label>価格備考/補足</label>
                 <textarea id="form-price-memo" rows="2" placeholder="理由や履歴など"></textarea>
             </div>
 
@@ -287,6 +287,23 @@
           return input;
       }
 
+      // マーカーがパネルに隠れないように中心をずらす関数
+      function centerMapWithOffset(lat, lng) {
+          const offsetWidth = 440; // パネルの幅
+          const projection = map.getProjection();
+          if (!projection) { map.setCenter({lat, lng}); return; }
+          
+          const worldPoint = projection.fromLatLngToPoint(new google.maps.LatLng(lat, lng));
+          const scale = Math.pow(2, map.getZoom());
+          // マーカーを左端から1/3程度の位置にするように調整
+          const offsetPoint = new google.maps.Point(
+              worldPoint.x + (offsetWidth / 2 / scale),
+              worldPoint.y
+          );
+          const newCenter = projection.fromPointToLatLng(offsetPoint);
+          map.panTo(newCenter);
+      }
+
       async function initMap() {
         const { Map, InfoWindow } = google.maps;
         map = new Map(document.getElementById("map"), { 
@@ -310,7 +327,7 @@
           geocoder.geocode({ address: address }, (results, status) => {
               if (status === "OK" && results[0]) {
                   const loc = results[0].geometry.location;
-                  map.setCenter(loc); map.setZoom(17);
+                  map.setZoom(17);
                   addNewProperty(loc.lat(), loc.lng());
               } else { alert("住所が見つかりませんでした"); }
           });
@@ -342,7 +359,7 @@
 
       function addTab() {
         saveCurrentTabData();
-        const baseData = JSON.parse(JSON.stringify(currentTabs[0].data)); // 1区画目の全データをディープコピー
+        const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
         baseData.id = ""; 
         baseData.name = "";
         baseData.d_first = ""; baseData.p_first = "";
@@ -426,6 +443,7 @@
         activeTabIndex = 0;
         loadTabData(currentTabs[0].data);
         renderTabs();
+        centerMapWithOffset(lat, lng);
         document.getElementById("editor-panel").style.display = "flex";
       };
 
@@ -453,6 +471,7 @@
         activeTabIndex = 0;
         loadTabData(currentTabs[0].data);
         renderTabs();
+        centerMapWithOffset(Number(r["緯度"]), Number(r["経度"]));
         document.getElementById("editor-panel").style.display = "flex";
       };
 
@@ -498,10 +517,12 @@
         allData = await res.json();
         markersList = allData.map(row => {
             if (!row["緯度"] || !row["経度"]) return null;
+            
+            const markerContent = getMarkerContent(row["物件種別"], row["成約フラグ"] === true || row["成約フラグ"] === "TRUE");
             const marker = new google.maps.marker.AdvancedMarkerElement({ 
                 position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) }, 
                 map: map,
-                content: getMarkerContent(row["物件種別"], row["成約フラグ"] === true || row["成約フラグ"] === "TRUE")
+                content: markerContent
             });
             marker.rowId = String(row["ID"]);
             
@@ -517,9 +538,9 @@
                 sharedInfoWindow.open(map, marker);
             });
 
-            // 修正：ダブルクリックで即編集
-            marker.addListener("dblclick", (e) => {
-                e.stop();
+            // コンテンツ（画像）に対してダブルクリックイベントを付与
+            markerContent.addEventListener("dblclick", (e) => {
+                e.stopPropagation();
                 openEdit(marker.rowId);
             });
             
