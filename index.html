@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.7.8</title>
+    <title>不動産管理マップ v4.7.9</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -22,16 +22,13 @@
             cursor: pointer; font-size: 14px; font-weight: bold;
         }
 
+        /* 編集パネル：常に右側に固定 */
         #editor-panel {
-            display: none; position: fixed; top: 10px; z-index: 1000;
+            display: none; position: fixed; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 0; border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px;
             max-height: 95vh; overflow: hidden; display: flex; flex-direction: column;
         }
-        /* パネルの位置クラス */
-        .panel-right { right: 10px; left: auto; }
-        .panel-left { left: 10px; right: auto; }
-
         .panel-header { padding: 15px 20px 10px 20px; background: white; flex-shrink: 0; }
         .panel-header h3 { margin: 0 0 5px 0; font-size: 18px; color: #1a73e8; }
         
@@ -41,6 +38,7 @@
         .tab-add { color: #188038; font-weight: bold; background: #e6f4ea; border-radius: 8px; margin-bottom: 5px;}
 
         .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; background: white; }
+        .drag-notice { font-size: 10px; color: #e67e22; margin-bottom: 10px; font-weight: bold; }
         .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; }
@@ -66,7 +64,7 @@
         <button id="search-btn" onclick="executeSearch()">検索</button>
     </div>
 
-    <div id="editor-panel" class="panel-right">
+    <div id="editor-panel">
         <div class="panel-header">
             <h3>物件登録・編集</h3>
             <div class="drag-notice">※編集中のマーカーは地図上でドラッグ移動できます</div>
@@ -212,7 +210,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbxjip-cKQiprCLEQp0nUyBj5g5YDDkIUMJPgQBSUWUQhCPNtjMZnod_wNCcJ7_Dtp_U/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbyGOxkWQeQk3EHbFLxGCjbEXiR7lCYkRFY7Qfm3hWEH8_lYi3LM5cPCZMeOOcAS-4yA/exec";
 
       const ICON_MAP = {
           "新築戸建": "https://sohken-homes.github.io/icon_new_house.png",
@@ -274,24 +272,6 @@
               return `${currentYear}/${m.padStart(2, '0')}/${d.padStart(2, '0')}`;
           }
           return input;
-      }
-
-      // パネルを左右どちらに出すか決定する関数
-      function setPanelSide(lat, lng) {
-        const projection = map.getProjection();
-        if (!projection) return;
-        const worldPoint = projection.fromLatLngToPoint(new google.maps.LatLng(lat, lng));
-        const centerWorldPoint = projection.fromLatLngToPoint(map.getCenter());
-        const panel = document.getElementById("editor-panel");
-        
-        // 画面の中心より右側をクリックしたらパネルは左に出す
-        if (worldPoint.x > centerWorldPoint.x) {
-            panel.classList.remove("panel-right");
-            panel.classList.add("panel-left");
-        } else {
-            panel.classList.remove("panel-left");
-            panel.classList.add("panel-right");
-        }
       }
 
       async function initMap() {
@@ -411,7 +391,6 @@
         marker.gmpDraggable = true; currentEditingMarker = marker;
         currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng } }];
         activeTabIndex = 0; loadTabData(currentTabs[0].data); renderTabs();
-        setPanelSide(lat, lng);
         document.getElementById("editor-panel").style.display = "flex";
       };
 
@@ -436,7 +415,6 @@
         };
         Object.keys(mapping).forEach(k => currentTabs[0].data[mapping[k]] = r[k]);
         activeTabIndex = 0; loadTabData(currentTabs[0].data); renderTabs();
-        setPanelSide(Number(r["緯度"]), Number(r["経度"]));
         document.getElementById("editor-panel").style.display = "flex";
       };
 
@@ -481,19 +459,13 @@
             const markerContent = getMarkerContent(row["物件種別"], row["成約フラグ"] === true || row["成約フラグ"] === "TRUE");
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) }, map: map, content: markerContent });
             marker.rowId = String(row["ID"]);
-            
-            // シングルクリック：情報ウィンドウ
             marker.addListener("click", (e) => {
                 e.stop(); const fmt = (v) => v ? Number(v).toLocaleString() : "-";
                 sharedInfoWindow.setContent(`<div style="min-width:200px; padding:10px;"><strong>${row["区画名"] || "未設定"}</strong><br>価格: ${fmt(row["販売価格（初回入力時/万円）"])}万円<br><button onclick="openEdit('${marker.rowId}')" style="margin-top:10px; width:100%;">編集</button></div>`);
                 sharedInfoWindow.open(map, marker);
             });
-            
-            // ダブルクリック：即編集
             marker.addListener("dblclick", (e) => { e.stop(); openEdit(marker.rowId); });
-            // コンテンツに対しても明示的にダブルクリックを登録
             markerContent.addEventListener("dblclick", (e) => { e.stopPropagation(); openEdit(marker.rowId); });
-            
             return marker;
         }).filter(m => m !== null);
         new markerClusterer.MarkerClusterer({ map, markers: markersList });
