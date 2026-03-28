@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.6.1</title>
+    <title>不動産管理マップ v4.6.4</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -32,7 +32,9 @@
         .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; margin-top: 5px; text-align: center; }
         .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
-        input[readonly] { background-color: #f5f5f5; color: #888; border: 1px solid #eee; }
+        
+        /* 読み取り専用の坪表示（背景色を白に変更） */
+        input[readonly] { background-color: #ffffff; color: #555; cursor: default; }
     </style>
 </head>
 <body>
@@ -70,26 +72,31 @@
         <div class="form-group">
             <label>初回入力日 / 初回価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-first" placeholder="yyyy/mm/dd" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-first" placeholder="初回価格" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-first" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-first" placeholder="価格（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <label>変更日１ / 変更1価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-c1" placeholder="yyyy/mm/dd" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-c1" placeholder="変更価格１" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-c1" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-c1" placeholder="変更価格１（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <label>変更日２ / 変更2価格</label>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-c2" placeholder="yyyy/mm/dd" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-c2" placeholder="変更価格２" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-c2" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-c2" placeholder="変更価格２（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+            </div>
+            <label>変更日３ / 変更3価格</label>
+            <div class="flex-row" style="margin-bottom:8px;">
+                <input type="text" id="form-d-c3" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-c3" placeholder="変更価格３（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="margin:0;">成約日 / 成約価格</label>
                 <div class="sold-inline"><input type="checkbox" id="form-is-sold"> 成約済</div>
             </div>
             <div class="flex-row" style="margin-bottom:8px;">
-                <input type="text" id="form-d-s" placeholder="成約日" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-                <input type="text" id="form-p-s" placeholder="成約価格" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
+                <input type="text" id="form-d-s" placeholder="月/日 or 年/月/日(西暦)" class="flex-item date-input" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+                <input type="text" id="form-p-s" placeholder="成約価格（万円）" class="comma-input flex-item" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')">
             </div>
             <label>価格推移 備考/補足</label>
             <textarea id="form-price-memo" rows="3" placeholder="理由や履歴など"></textarea>
@@ -142,7 +149,7 @@
                 <div class="flex-item"><label>取引態様</label><select id="form-taiyou"><option value="">選択</option><option value="売主">売主</option><option value="仲介(専)">仲介(専)</option><option value="仲介(一般)">仲介(一般)</option><option value="販売代理">販売代理</option></select></div>
                 <div class="flex-item"><label>登録媒体</label><select id="form-media"><option value="">選択</option><option value="レインズ">レインズ</option><option value="仲介HP">仲介HP</option><option value="売主HP">売主HP</option><option value="ポータルサイト">ポータルサイト</option><option value="紹介">紹介</option><option value="その他">その他</option></select></div>
             </div>
-            <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介者の氏名など"></div>
+            <div class="form-group"><label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="紹介者名/物件担当者名など"></div>
         </div>
 
         <div class="section-title">公法制限・接道</div>
@@ -152,13 +159,13 @@
                 <div class="flex-item"><label>容積率</label><div class="flex-row"><input type="text" id="form-youseki" class="comma-input" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"><span class="unit-label">%</span></div></div>
             </div>
             <label>用途地域</label>
-            <input type="text" id="form-law" placeholder="第1種低層など" style="margin-bottom:5px;">
+            <input type="text" id="form-law" placeholder="１低・１高・準防火など" style="margin-bottom:5px;">
             <label>接道状況</label>
             <input type="text" id="form-road" placeholder="東側公道◯◯ｍなど">
         </div>
 
         <div class="section-title">備考・URL・入力者</div>
-        <div class="form-group"><label>参考URL</label><input type="url" id="form-url1" style="margin-bottom:5px;"><input type="url" id="form-url2"></div>
+        <div class="form-group"><label>参考URL</label><input type="url" id="form-url1" placeholder="https://..." style="margin-bottom:5px;"><input type="url" id="form-url2" placeholder="https://..."></div>
         <div class="form-group"><label>全体メモ</label><textarea id="form-memo" rows="2" placeholder="メモ"></textarea></div>
         <div class="form-group"><label>入力者</label><input type="text" id="form-user" placeholder="担当者名"></div>
 
@@ -293,7 +300,8 @@
         document.getElementById('siire-tsubo').value = formatNumberWithComma(sTsubo, 2);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
 
-        const currentP = pS || parseFloat(removeComma(document.getElementById('form-p-c2').value)) || parseFloat(removeComma(document.getElementById('form-p-c1').value)) || pFirst;
+        // 最新価格の判定（成約 > 変更3 > 変更2 > 変更1 > 初回）
+        const currentP = pS || parseFloat(removeComma(document.getElementById('form-p-c3').value)) || parseFloat(removeComma(document.getElementById('form-p-c2').value)) || parseFloat(removeComma(document.getElementById('form-p-c1').value)) || pFirst;
         const ratio = pFirst > 0 ? (currentP / pFirst) : 1;
         const fmt = (n) => n.toLocaleString(undefined, {maximumFractionDigits: 1});
 
@@ -369,6 +377,7 @@
         setV("form-d-first", r["初回価格入力日"]); setV("form-p-first", r["販売価格（初回入力時/万円）"]);
         setV("form-d-c1", r["変更日1"]); setV("form-p-c1", r["変更価格１（万円）"]);
         setV("form-d-c2", r["変更日2"]); setV("form-p-c2", r["変更価格２（万円）"]);
+        setV("form-d-c3", r["変更日3"]); setV("form-p-c3", r["変更価格３（万円）"]);
         setV("form-d-s", r["成約日"]); setV("form-p-s", r["成約価格（万円）"]);
         setV("form-price-memo", r["価格推移備考"]);
         setV("form-sub-price", r["建物価格入力用"]); setV("form-t-m2", r["地積（㎡）"]); setV("form-t-tsubo", r["地積（坪）"]);
@@ -394,6 +403,7 @@
           d_first: document.getElementById("form-d-first").value, p_first: getV("form-p-first"),
           d_c1: document.getElementById("form-d-c1").value, p_c1: getV("form-p-c1"),
           d_c2: document.getElementById("form-d-c2").value, p_c2: getV("form-p-c2"),
+          d_c3: document.getElementById("form-d-c3").value, p_c3: getV("form-p-c3"),
           d_s: document.getElementById("form-d-s").value, p_s: getV("form-p-s"), price_memo: document.getElementById("form-price-memo").value,
           sub_p: getV("form-sub-price"), t_m2: getV("form-t-m2"), t_tsubo: getV("form-t-tsubo"),
           b_m2: getV("form-b-m2"), b_tsubo: getV("form-b-tsubo"), layout: document.getElementById("form-layout").value,
