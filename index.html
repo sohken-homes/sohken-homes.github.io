@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.7.3</title>
+    <title>不動産管理マップ v4.7.4</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: "Hiragino Sans", "Meiryo", sans-serif; background: #f0f2f5; }
         #map { height: 100vh; width: 100%; }
         
-        /* 住所検索窓のレイアウト修正 */
+        /* 住所検索窓のレイアウト */
         #search-box-container {
             position: absolute; top: 10px; left: 10px; z-index: 5;
             display: flex; gap: 5px; align-items: center;
         }
         #address-input {
-            width: 180px; /* 元の60%程度の幅 */
-            padding: 10px 15px; border: none; border-radius: 8px;
+            width: 180px; padding: 10px 15px; border: none; border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none;
         }
         #search-btn {
@@ -189,7 +188,7 @@
                 <label>登録業者名 / 支店名</label>
                 <div class="flex-row" style="margin-bottom:5px;">
                     <input type="text" id="form-gyosha" placeholder="業者名" class="flex-item">
-                    <input type="text" id="shiten-name" id="form-shiten" placeholder="支店名" class="flex-item">
+                    <input type="text" id="form-shiten" placeholder="支店名" class="flex-item">
                 </div>
                 <div class="flex-row" style="margin-bottom:5px;">
                     <div class="flex-item"><label>取引態様</label><select id="form-taiyou"><option value="">選択</option><option value="売主">売主</option><option value="仲介(専)">仲介(専)</option><option value="仲介(一般)">仲介(一般)</option><option value="販売代理">販売代理</option></select></div>
@@ -243,7 +242,6 @@
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
       const GAS_URL = "https://script.google.com/macros/s/AKfycbw9UqJp4Z2iWnocraWaoRrOKRyPtZ0fQ0FfVE-MUZPzzx-K_pww4z2BwqAtjOgCRYJC/exec";
 
-      // アイコン定義、スクリプト読み込み等は省略なし（前Verと同じ）
       const ICON_MAP = {
           "新築戸建": "https://sohken-homes.github.io/icon_new_house.png",
           "中古戸建": "https://sohken-homes.github.io/icon_used_house.png",
@@ -276,7 +274,6 @@
       let map, sharedInfoWindow, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
 
-      // 共通関数
       function formatNumberWithComma(val, fixedDigits = null) {
           if (!val && val !== 0) return "";
           let raw = val.toString().replace(/,/g, "");
@@ -307,6 +304,13 @@
             disableDoubleClickZoom: true 
         });
         sharedInfoWindow = new InfoWindow(); geocoder = new google.maps.Geocoder();
+        
+        // 修正：マップをクリックしたらパネルを閉じる（検索窓もリセット）
+        map.addListener("click", () => {
+            sharedInfoWindow.close();
+            closePanel();
+        });
+        
         map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
         document.getElementById("address-input").addEventListener("keypress", (e) => {
             if(e.key === "Enter") executeSearch();
@@ -314,7 +318,6 @@
         loadMarkers();
       }
 
-      // 住所検索実行
       function executeSearch() {
           const address = document.getElementById("address-input").value;
           if(!address) return;
@@ -361,13 +364,13 @@
             const el = document.createElement("div");
             el.className = `tab ${index === activeTabIndex ? 'active' : ''}`;
             el.innerText = tab.label;
-            el.onclick = () => switchTab(index);
+            el.onclick = (e) => { e.stopPropagation(); switchTab(index); };
             bar.appendChild(el);
         });
         const addBtn = document.createElement("div");
         addBtn.className = "tab tab-add";
         addBtn.innerText = "＋追加";
-        addBtn.onclick = () => addTab();
+        addBtn.onclick = (e) => { e.stopPropagation(); addTab(); };
         bar.appendChild(addBtn);
       }
 
@@ -483,8 +486,7 @@
         loadTabData(currentTabs[0].data);
         renderTabs();
         fetchAddressAndFill(lat, lng);
-        const panel = document.getElementById("editor-panel");
-        panel.style.display = "flex";
+        document.getElementById("editor-panel").style.display = "flex";
         document.getElementById("form-container").scrollTop = 0;
       };
 
@@ -520,11 +522,10 @@
         const btn = document.querySelector(".btn-save");
         btn.innerText = "保存中..."; btn.disabled = true;
         try {
-            let firstId = "";
             for(let i=0; i < currentTabs.length; i++) {
                 const data = currentTabs[i].data;
                 data.mode = "save";
-                if(i > 0) data.parent_id = firstId;
+                if(i > 0) data.parent_id = currentTabs[0].data.id;
                 await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
             }
             location.reload();
@@ -548,7 +549,9 @@
               if(!currentEditingMarker.rowId) currentEditingMarker.map = null;
               currentEditingMarker = null;
           }
+          // パネルを隠し、検索窓もリセット
           document.getElementById("editor-panel").style.display = "none";
+          document.getElementById("address-input").value = "";
       };
 
       async function loadMarkers() {
@@ -560,7 +563,9 @@
                 content: getMarkerContent(row["物件種別"], row["成約フラグ"] === true || row["成約フラグ"] === "TRUE")
             });
             marker.rowId = String(row["ID"]);
-            marker.addListener("click", () => {
+            marker.addListener("click", (e) => {
+                // マーカークリック時は、親（マップ）へのクリック伝播を止める
+                e.stop();
                 const fmt = (v) => v ? Number(v).toLocaleString() : "-";
                 let chain = fmt(row["販売価格（初回入力時/万円）"]);
                 if (row["変更価格１（万円）"]) chain += " → " + fmt(row["変更価格１（万円）"]);
@@ -578,14 +583,15 @@
       }
 
       window.addEventListener('load', () => {
-        document.getElementById("form-container").addEventListener('blur', (e) => {
+        const container = document.getElementById("form-container");
+        container.addEventListener('blur', (e) => {
             if(e.target.classList.contains('comma-input')) {
                 if(!e.target.readOnly) e.target.value = formatNumberWithComma(e.target.value);
                 updateAutoFields();
             }
             if(e.target.classList.contains('date-input')) e.target.value = formatToFullDate(e.target.value);
         }, true);
-        document.getElementById("form-container").addEventListener('focus', (e) => {
+        container.addEventListener('focus', (e) => {
             if(e.target.classList.contains('comma-input')) e.target.value = removeComma(e.target.value);
         }, true);
         document.getElementById('form-type').addEventListener('change', updateAutoFields);
