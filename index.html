@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.9.5</title>
+    <title>不動産管理マップ v4.9.6</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -15,12 +15,14 @@
         .panel-header { padding: 15px 20px 10px 20px; background: white; flex-shrink: 0; }
         .panel-header h3 { margin: 0 0 5px 0; font-size: 18px; color: #1a73e8; }
         
-        .tab-container { display: flex; gap: 4px; padding: 0 15px; background: #f1f3f4; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; }
-        .tab { padding: 8px 16px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; font-size: 13px; color: #5f6368; white-space: nowrap; margin-top: 5px; }
+        /* ★修正：タブのサイズを少しコンパクトに調整 */
+        .tab-container { display: flex; gap: 2px; padding: 0 10px; background: #f1f3f4; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
+        .tab-container::-webkit-scrollbar { display: none; }
+        .tab { padding: 6px 12px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; font-size: 12px; color: #5f6368; white-space: nowrap; margin-top: 5px; }
         .tab.active { background: white; border-color: #ddd; color: #1a73e8; font-weight: bold; position: relative; top: 1px; }
-        .tab-add { color: #188038; font-weight: bold; background: #e6f4ea; border-radius: 8px; margin-bottom: 5px;}
+        .tab-add { color: #188038; font-weight: bold; background: #e6f4ea; border-radius: 6px; margin-bottom: 5px;}
 
-        .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; background: white; }
+        .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; background: white; scroll-behavior: smooth; }
         .drag-notice { font-size: 10px; color: #e67e22; margin-bottom: 10px; font-weight: bold; }
         .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
         .form-group { margin-bottom: 12px; }
@@ -46,7 +48,7 @@
 <body>
 
     <div id="search-box-container">
-        <input type="text" id="address-input" placeholder="住所で新規登録">
+        <input type="text" id="address-input" placeholder="住所で新規登録" onkeydown="if(event.key==='Enter')executeSearch()">
         <button id="search-btn" onclick="executeSearch()">検索</button>
     </div>
 
@@ -86,9 +88,9 @@
             <div class="form-group">
                 <label>住所</label>
                 <div class="flex-row">
-                    <div class="flex-item"><label style="font-size:9px;">市区</label><input type="text" id="form-addr1" placeholder="市区"></div>
-                    <div class="flex-item"><label style="font-size:9px;">丁目</label><input type="text" id="form-addr2" placeholder="丁目"></div>
-                    <div class="flex-item"><label style="font-size:9px;">以降</label><input type="text" id="form-addr3" placeholder="以降"></div>
+                    <div class="flex-item"><input type="text" id="form-addr1" placeholder="市区"></div>
+                    <div class="flex-item"><input type="text" id="form-addr2" placeholder="丁目"></div>
+                    <div class="flex-item"><input type="text" id="form-addr3" placeholder="以降"></div>
                 </div>
             </div>
 
@@ -321,6 +323,9 @@
         });
         fetchAddress(lat, lng);
         loadTabData(currentTabs[0].data); renderTabs();
+        // ★修正：パネル表示時にスクロールを最上部へ
+        const panelBody = document.querySelector(".panel-body");
+        if(panelBody) panelBody.scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
       };
 
@@ -344,6 +349,9 @@
         activeTabIndex = 0; 
         loadTabData(currentTabs[0].data); 
         renderTabs();
+        // ★修正：パネル表示時にスクロールを最上部へ
+        const panelBody = document.querySelector(".panel-body");
+        if(panelBody) panelBody.scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
       };
 
@@ -402,7 +410,6 @@
         const siireP = parseFloat(removeComma(document.getElementById('siire-price').value)) || 0;
         const siireM2 = parseFloat(removeComma(document.getElementById('siire-m2').value)) || 0;
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
-        // ★修正：坪表示を常に小数点第2位に
         document.getElementById('siire-tsubo').value = formatNumberWithComma(sTsubo.toFixed(2));
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
         document.getElementById('build-price-input').style.display = (type.includes("戸建") || type.includes("自社")) ? "block" : "none";
@@ -447,8 +454,14 @@
       };
 
       window.executeSearch = () => {
-          geocoder.geocode({ address: document.getElementById("address-input").value }, (res, status) => {
-              if (status === "OK") { map.setCenter(res[0].geometry.location); addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); }
+          const address = document.getElementById("address-input").value;
+          if(!address) return;
+          geocoder.geocode({ address: address }, (res, status) => {
+              if (status === "OK") { 
+                  map.setCenter(res[0].geometry.location); 
+                  map.setZoom(17);
+                  addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); 
+              } else { alert("住所が見つかりませんでした"); }
           });
       };
 
@@ -489,15 +502,12 @@
       window.addEventListener('load', () => {
         const container = document.getElementById("form-container");
         
-        // ★修正：数字のみの入力制御
         container.addEventListener('input', (e) => {
             if (e.target.classList.contains('only-num')) {
-                // 半角数字、カンマ、ドット以外を除去
                 e.target.value = e.target.value.replace(/[^0-9\.\,]/g, '');
             }
         });
 
-        // ★修正：Enterキーで次のフォームへ
         container.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
@@ -522,7 +532,6 @@
             const el = document.getElementById(m2Id);
             if(el) { el.addEventListener('blur', (e) => {
                 const v = removeComma(e.target.value);
-                // ★修正：計算結果を小数点第2位まで表示
                 if(v) document.getElementById(tsuboId).value = (Math.floor((v * 0.3025) * 100) / 100).toFixed(2);
             });}
         };
