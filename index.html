@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.9.9</title>
+    <title>不動産管理マップ v4.10.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -259,18 +259,18 @@
       let map, sharedInfoWindow, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
       let isDragging = false; 
-      let dragLock = false; // ★ドラッグ直後の誤作動防止用ロック
+      let dragLock = false; 
 
       async function initMap() {
         const { Map, InfoWindow } = google.maps;
         map = new Map(document.getElementById("map"), { center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID, disableDoubleClickZoom: true });
         sharedInfoWindow = new InfoWindow(); geocoder = new google.maps.Geocoder();
         
+        // ★修正：地図クリックでパネルを閉じる（新規物件登録時も含む）
         map.addListener("click", (e) => { 
-            // ロック中、ドラッグ中、新規マーカー入力中の場合は閉じない
             if(dragLock || isDragging) return;
-            if(currentEditingMarker && !currentEditingMarker.rowId) return; 
-            sharedInfoWindow.close(); closePanel(); 
+            sharedInfoWindow.close(); 
+            closePanel(); 
         });
         map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
         document.getElementById("editor-panel").style.setProperty("display", "none", "important");
@@ -312,7 +312,12 @@
             currentEditingMarker.map = null;
             currentEditingMarker = null;
         }
-        const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true });
+        
+        const img = document.createElement("img");
+        img.src = ICON_MAP["DEFAULT"];
+        img.style.width = "32px"; img.style.cursor = "pointer";
+
+        const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true, content: img });
         currentEditingMarker = marker;
         currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng, tab_name: "区画1" } }];
         activeTabIndex = 0; 
@@ -324,7 +329,6 @@
             currentTabs[activeTabIndex].data.lat = newPos.lat();
             currentTabs[activeTabIndex].data.lng = newPos.lng();
             fetchAddress(newPos.lat(), newPos.lng());
-            // ★ドラッグ終了後、少し待ってからクリック判定を有効化
             setTimeout(() => { dragLock = false; }, 200);
         });
 
@@ -343,8 +347,6 @@
         const marker = markersList.find(m => m.rowId === id);
         if(marker) { 
             marker.gmpDraggable = true; currentEditingMarker = marker;
-            // リスナーの重複登録を避けるため一度リセット（または既に設定済みなら無視）が理想的ですが
-            // AdvancedMarkerElementの場合はイベントを再定義
             marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
             marker.addListener('dragend', (e) => {
                 isDragging = false; 
@@ -487,7 +489,10 @@
       };
 
       window.closePanel = () => {
-          if(currentEditingMarker && !currentEditingMarker.rowId) currentEditingMarker.map = null;
+          if(currentEditingMarker && !currentEditingMarker.rowId) {
+              currentEditingMarker.map = null;
+              currentEditingMarker = null;
+          }
           document.getElementById("editor-panel").style.setProperty("display", "none", "important");
       };
 
@@ -501,7 +506,6 @@
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) }, map: map, content: img });
             marker.rowId = String(row["ID"]);
             
-            // ★修正：DOM要素（img）に直接リスナーを付けてバブリングを防ぎ、動作を確実に
             img.addEventListener("click", (e) => {
                 e.stopPropagation(); 
                 const fmt = (v) => v ? Number(v).toLocaleString() : "-";
