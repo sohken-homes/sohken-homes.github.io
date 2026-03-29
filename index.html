@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.12.0</title>
+    <title>不動産管理マップ v4.12.2</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -83,7 +83,7 @@
                     </div>
                 </div>
             </div>
-            <div class="form-group"><label>物件名称</label><input type="text" id="form-name" placeholder="例：〇〇シリーズ世田谷など"></div>
+            <div class="form-group"><label>物件名称/売主業者の場合の業者名</label><input type="text" id="form-name" placeholder="例：㈱〇〇・〇〇シリーズ荻窪など"></div>
             <div class="form-group">
                 <label>住所</label>
                 <div class="flex-row">
@@ -119,7 +119,7 @@
                     <div class="flex-item"><input type="text" id="form-d-s" placeholder="月/日または年/月/日（西暦）" class="date-input"></div>
                     <div class="flex-item"><input type="text" id="form-p-s" placeholder="成約価格" class="comma-input only-num"></div>
                 </div>
-                <label>価格備考</label>
+                <label>備考（価格）</label>
                 <textarea id="form-price-memo" rows="2" placeholder="理由や履歴など"></textarea>
             </div>
 
@@ -189,14 +189,14 @@
                         <span class="unit-label" style="padding-bottom:10px;">分</span>
                     </div>
                 </div>
-                <label>備考（交通）</label><input type="text" id="form-train-memo" placeholder="他の交通手段など">
-            </div>
+                <label>備考（交通）</label><textarea id="form-price-memo" rows="2" placeholder="他の交通手段など">
+                </div>
 
             <div class="section-title">備考</div>
             <div class="form-group">
                 <label>参考URL 1</label><input type="url" id="form-url1" placeholder="https://..." style="margin-bottom:5px;">
                 <label>参考URL 2</label><input type="url" id="form-url2" placeholder="https://..." style="margin-bottom:5px;">
-                <label>全体メモ</label><textarea id="form-memo" rows="2" placeholder="メモ"></textarea>
+                <label>備考（全体）</label><textarea id="form-memo" rows="2" placeholder="自由メモ"></textarea>
                 <label>入力担当者</label><input type="text" id="form-user" placeholder="名前">
             </div>
 
@@ -228,7 +228,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbz37eWPxxZDffztouW5fkkampmZrAnI0JlSmxXVFgswoh-gyKM-_nCipBbKW0YYfGiq/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwA2EDD768Ao6fHB0xnx7IcEi1SL2hJZtUGr2qg5RjNwaRg_2xAqYHgQ8GC0XEITzzi/exec";
 
       // ★修正漏れを完全カバー
       const FORM_MAP = {
@@ -256,7 +256,7 @@
           "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
           "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png",
           "SOLD": "https://sohken-homes.github.io/sold_house.png",
-          "DEFAULT": "http://maps.google.com/mapfiles/ms/icons/red-dot.png" 
+          "DEFAULT": "https://googleusercontent.com/maps.google.com/0" 
       };
 
       const script = document.createElement('script');
