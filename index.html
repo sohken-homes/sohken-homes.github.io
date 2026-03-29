@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.13.0</title>
+    <title>不動産管理マップ v4.13.1</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -255,7 +255,8 @@
           "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
           "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png",
           "SOLD": "https://sohken-homes.github.io/sold_house.png",
-          "DEFAULT": "https://googleusercontent.com/maps.google.com/0" 
+          // ★修正：Google公式の安全な赤いピン画像のURLに変更
+          "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
       };
 
       const script = document.createElement('script');
@@ -266,7 +267,7 @@
       let currentTabs = []; let activeTabIndex = 0;
       let isDragging = false; 
       let dragLock = false; 
-      let clusterer = null; // ★追加：クラスターをグローバル管理
+      let clusterer = null; 
 
       async function initMap() {
         const { Map, InfoWindow } = google.maps;
@@ -281,7 +282,6 @@
         map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
         document.getElementById("editor-panel").style.setProperty("display", "none", "important");
         
-        // 初回データ読み込み
         fetchMapData();
       }
 
@@ -363,13 +363,21 @@
             });
         }
         
+        // ★修正：スプレッドシートの「日本語の列名」を「英語のキー」に正しく変換して流し込む
         currentTabs = idArray.map(id => {
             const r = allData.find(d => String(d["ID"]) === String(id));
             const data = {};
-            Object.keys(FORM_MAP).forEach(idKey => {
-                const sheetKey = FORM_MAP[idKey];
-                data[sheetKey] = r[sheetKey] !== undefined ? r[sheetKey] : "";
-            });
+            const sheetToKey = { 
+                "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3", 
+                "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成フラグ":"is_sold", "成約フラグ":"is_sold", // ※シートによって表記揺れがあるため念のため両方対応
+                "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p", 
+                "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user", 
+                "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road", 
+                "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
+                "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user", 
+                "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis" 
+            };
+            Object.keys(sheetToKey).forEach(s => data[sheetToKey[s]] = r[s] !== undefined ? r[s] : "");
             return { label: data.tab_name || "区画1", data: data };
         });
 
@@ -503,7 +511,6 @@
           }
       }
 
-      // ★保存時：ページをリロードせず、マップデータだけを更新
       window.submitForm = async () => {
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
@@ -516,7 +523,6 @@
             const result = await res.json();
             if(result.error) throw new Error(result.error);
             
-            // ★リロードを廃止し、データを再取得してマップを再描画
             await fetchMapData(); 
             sharedInfoWindow.close();
             closePanel();
@@ -540,7 +546,6 @@
           });
       };
 
-      // ★削除時：ページをリロードせず、マップデータだけを更新
       window.deleteProperty = async () => {
           if(!confirm("この区画/タブを削除しますか？")) return;
           const btn = document.getElementById("delete-btn"); btn.innerText = "削除中..."; btn.disabled = true;
@@ -549,7 +554,6 @@
               const result = await res.json();
               if(result.error) throw new Error(result.error);
               
-              // ★リロードを廃止
               await fetchMapData();
               sharedInfoWindow.close();
               closePanel();
@@ -569,21 +573,19 @@
           document.getElementById("editor-panel").style.setProperty("display", "none", "important");
       };
 
-      // ★データ取得処理（表示状態を維持）
       async function fetchMapData() {
         try {
             const res = await fetch(GAS_URL, { redirect: "follow" }); 
             const result = await res.json();
             if(result.error) { alert("データの読み込みに失敗しました：\n" + result.error); return; }
             allData = result;
-            renderMarkers(); // マーカーだけを再描画
+            renderMarkers(); 
         } catch (e) {
             console.error("CORSや通信エラー:", e);
             alert("通信エラーが発生しました。GASのURLが正しいか確認してください。");
         }
       }
 
-      // ★マーカーの再描画＆クラスター生成（余白設定を追加）
       function renderMarkers() {
         if (clusterer) {
             clusterer.clearMarkers();
@@ -636,13 +638,11 @@
             return marker;
         });
 
-        // クラスターの生成とクリック時の余白設定
         if (!clusterer) {
             clusterer = new markerClusterer.MarkerClusterer({ 
                 map, 
                 markers: markersList,
                 onClusterClick: (event, cluster, map) => {
-                    // ★クラスタークリック時、上下左右に100pxの余白を設けてズーム
                     const bounds = new google.maps.LatLngBounds();
                     cluster.markers.forEach(m => bounds.extend(m.position));
                     map.fitBounds(bounds, 100); 
