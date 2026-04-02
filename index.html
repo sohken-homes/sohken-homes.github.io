@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.16.01</title>
+    <title>不動産管理マップ v4.17.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -11,9 +11,10 @@
         #address-input { width: 180px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
         #search-btn { padding: 10px 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: bold; }
         
-        #editor-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; display: flex; flex-direction: column; }
-        .panel-header { padding: 15px 20px 10px 20px; background: white; flex-shrink: 0; }
-        .panel-header h3 { margin: 0 0 5px 0; font-size: 18px; color: #1a73e8; }
+        /* パネル共通スタイル */
+        .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; flex-direction: column; }
+        .panel-header { padding: 15px 20px 10px 20px; background: white; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+        .panel-header h3 { margin: 0; font-size: 18px; color: #1a73e8; }
         
         .tab-container { display: flex; gap: 2px; padding: 0 10px; background: #f1f3f4; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
         .tab-container::-webkit-scrollbar { display: none; }
@@ -22,34 +23,58 @@
         .tab-add { color: #188038; font-weight: bold; background: #e6f4ea; border-radius: 6px; margin-bottom: 5px;}
 
         .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; background: white; scroll-behavior: smooth; }
-        .drag-notice { font-size: 10px; color: #e67e22; margin-bottom: 10px; font-weight: bold; }
         .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
+        
+        /* 編集パネル用スタイル */
+        .drag-notice { font-size: 10px; color: #e67e22; margin-top: 4px; font-weight: bold; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         .flex-row { display: flex; gap: 8px; align-items: flex-end; }
         .flex-item { flex: 1; }
         .unit-label { font-size: 12px; color: #888; white-space: nowrap; width: 25px; }
-        
         .sold-inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cf1322; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
         .sold-inline input { width: 18px !important; height: 18px !important; margin: 0; cursor: pointer; }
-
         #unit-price-container { background: #fffbe6; padding: 12px; border-radius: 8px; border: 1px solid #ffe58f; margin-top: 10px; }
         .price-display { font-size: 16px; font-weight: bold; color: #d93025; }
         .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; text-align: center; }
-        
         .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
         .btn-delete { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
         input[readonly] { background-color: #f9f9f9; color: #555; }
         
-        #file-manager { border: 2px dashed #b7eb8f; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 12px; background: #f6ffed; transition: 0.3s; }
+        #file-manager { border: 2px dashed #b7eb8f; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 12px; background: #f6ffed; }
         #file-manager.dragover { background: #e8f0fe; border-color: #1a73e8; }
         .file-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 6px 0; }
         .file-item a { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a73e8; text-decoration: none; font-size: 12px; }
         .file-item a:hover { text-decoration: underline; }
         .file-actions button { font-size: 10px; padding: 2px 6px; margin-left: 4px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: white; }
         .file-actions button.del { color: #cf1322; border-color: #ffa39e; }
+
+        /* --- 閲覧パネル専用スタイル --- */
+        .btn-switch-edit { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-switch-edit:hover { background: #e8f0fe; }
+        .btn-close-view { background: #f1f3f4; border: none; color: #5f6368; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-left: 5px; }
+        .view-price-box { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
+        .view-latest-price { font-size: 28px; font-weight: bold; color: #cf1322; margin: 0; line-height: 1; }
+        .view-price-history { font-size: 12px; color: #666; margin-top: 8px; font-weight: bold; }
+        .view-unit-price { font-size: 13px; color: #d46b08; margin-top: 8px; background: #fff1b8; display: inline-block; padding: 2px 8px; border-radius: 4px; }
+        .view-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; margin-bottom: 10px; }
+        .view-item { background: #f8f9fa; padding: 8px 10px; border-radius: 6px; border: 1px solid #e8eaed; }
+        .view-item span { display: block; font-size: 10px; color: #80868b; margin-bottom: 2px; }
+        .view-item div { color: #202124; font-weight: bold; word-break: break-all; }
+        .view-item.full-width { grid-column: span 2; }
+        .view-item.sold-box { background: #fff1f0; border-color: #ffa39e; }
+        .btn-drive-link { display: block; background: #e6f4ea; color: #137333; text-align: center; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; border: 1px solid #ceead6; font-size: 14px; margin-top: 5px; }
+        .btn-drive-link:hover { background: #d3eadd; }
+
+        /* --- マーカーの光るアニメーション --- */
+        .active-marker { outline: 4px solid #ff9800; outline-offset: 2px; border-radius: 50%; box-shadow: 0 0 15px rgba(255, 152, 0, 0.8); animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 152, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
     </style>
 </head>
 <body>
@@ -59,9 +84,25 @@
         <button id="search-btn" onclick="executeSearch()">検索</button>
     </div>
 
-    <div id="editor-panel">
+    <div id="view-panel" class="side-panel">
         <div class="panel-header">
-            <h3>物件登録・編集</h3>
+            <h3>🏠 物件詳細</h3>
+            <div>
+                <button class="btn-switch-edit" onclick="switchToEdit()">✏️ 編集</button>
+                <button class="btn-close-view" onclick="closePanel()">✖ 閉じる</button>
+            </div>
+        </div>
+        <div class="tab-container" id="view-tab-bar"></div>
+        <div class="panel-body" id="view-container">
+            </div>
+    </div>
+
+    <div id="editor-panel" class="side-panel">
+        <div class="panel-header" style="display:block;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>✏️ 物件登録・編集</h3>
+                <button class="btn-close-view" onclick="closePanel()">✖ 閉じる</button>
+            </div>
             <div class="drag-notice">※編集中のマーカーは地図上でドラッグ移動できます</div>
         </div>
         <div class="tab-container" id="tab-bar"></div>
@@ -76,7 +117,7 @@
                     <div class="flex-item">
                         <label>物件種別</label>
                         <select id="form-type">
-                            <option value="">選択してください</option>
+                            <option value="">選択</option>
                             <optgroup label="他社分譲"><option value="新築戸建">新築戸建</option><option value="中古戸建">中古戸建</option><option value="売地">売地</option></optgroup>
                             <optgroup label="自社分譲"><option value="自社新築">自社新築</option><option value="自社中古">自社中古</option><option value="自社売地">自社売地</option><option value="自社新築(情開)">自社新築(情開)</option><option value="自社中古(情開)">自社中古(情開)</option><option value="自社売地(情開)">自社売地(情開)</option><option value="自社中古MS(情開)">自社中古MS(情開)</option></optgroup>
                             <optgroup label="マンション・その他"><option value="新築MS">新築MS</option><option value="中古MS">中古MS</option><option value="査定依頼">査定依頼</option><option value="査定依頼MS">査定依頼MS</option></optgroup>
@@ -220,8 +261,8 @@
                 <div class="siire-unit-box" style="margin-top:10px;"><label style="font-size:11px; color:#52c41a;">仕入坪単価：</label><span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span></div>
             </div>
 
-            <button class="btn-save" onclick="submitForm()">すべてのタブを一括保存する</button>
-            <button class="btn-cancel" onclick="closePanel()">キャンセル</button>
+            <button class="btn-save" onclick="submitForm()">保存して閉じる</button>
+            <button class="btn-cancel" onclick="switchToView()">閲覧モードに戻る</button>
             <button class="btn-delete" id="delete-btn" onclick="deleteProperty()" style="display:none;">この区画を削除する</button>
         </div>
     </div>
@@ -268,7 +309,7 @@
       script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=marker&v=weekly&callback=initMap`;
       script.async = true; document.head.appendChild(script);
 
-      let map, sharedInfoWindow, geocoder, allData = [], currentEditingMarker = null, markersList = [];
+      let map, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
       let isDragging = false; let dragLock = false; let clusterer = null; 
 
@@ -280,16 +321,27 @@
       }
 
       async function initMap() {
-        const { Map, InfoWindow } = google.maps;
+        const { Map } = google.maps;
         map = new Map(document.getElementById("map"), { center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID, disableDoubleClickZoom: true });
-        sharedInfoWindow = new InfoWindow(); geocoder = new google.maps.Geocoder();
+        geocoder = new google.maps.Geocoder();
         
         map.addListener("click", (e) => { 
             if(dragLock || isDragging) return;
-            sharedInfoWindow.close(); closePanel(); 
+            closePanel(); 
         });
         map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
         fetchMapData();
+      }
+
+      // --- マーカーの発光制御 ---
+      function highlightMarker(marker) {
+          if (currentEditingMarker && currentEditingMarker.content) {
+              currentEditingMarker.content.classList.remove('active-marker');
+          }
+          currentEditingMarker = marker;
+          if (marker && marker.content) {
+              marker.content.classList.add('active-marker');
+          }
       }
 
       function parseAddress(fullAddress) {
@@ -326,10 +378,10 @@
       }
 
       window.addNewProperty = (lat, lng) => {
-        if(currentEditingMarker && !currentEditingMarker.rowIds) { currentEditingMarker.map = null; currentEditingMarker = null; }
+        closePanel();
         const img = document.createElement("img"); img.src = ICON_MAP["DEFAULT"]; img.style.width = "32px"; img.style.cursor = "pointer";
         const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true, content: img });
-        currentEditingMarker = marker;
+        highlightMarker(marker);
         
         const newId = generateUUID(); 
         currentTabs = [{ label: "区画1", data: { id: newId, lat: lat, lng: lng, tab_name: "区画1" } }];
@@ -345,52 +397,193 @@
         
         fetchAddress(lat, lng);
         loadTabData(currentTabs[0].data); renderTabs();
-        document.querySelector(".panel-body").scrollTop = 0;
+        document.querySelector("#form-container").scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
-        
         refreshFileList(); 
       };
 
-      window.openEdit = (ids) => {
-        const idArray = ids.split(",");
-        if(currentEditingMarker && !currentEditingMarker.rowIds) currentEditingMarker.map = null;
-        
-        const marker = markersList.find(m => m.rowIds === ids);
-        if(marker) { 
-            marker.gmpDraggable = true; currentEditingMarker = marker;
-            marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
-            marker.addListener('dragend', (e) => {
-                isDragging = false; 
-                currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
-                fetchAddress(e.latLng.lat(), e.latLng.lng());
-                setTimeout(() => { dragLock = false; }, 200);
-            });
-        }
-        
-        currentTabs = idArray.map(id => {
-            const r = allData.find(d => String(d["ID"]) === String(id));
-            const data = {};
-            const sheetToKey = {
-                "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
-                "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成約フラグ":"is_sold", "成フラグ":"is_sold",
-                "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p",
-                "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
-                "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road",
-                "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
-                "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
-                "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis"
-            };
-            Object.keys(sheetToKey).forEach(s => { if (r[s] !== undefined) data[sheetToKey[s]] = r[s]; });
-            return { label: data.tab_name || "区画1", data: data };
-        });
+      // ★ データを開く処理（共通化）
+      function prepareDataForIds(ids) {
+          const idArray = ids.split(",");
+          currentTabs = idArray.map(id => {
+              const r = allData.find(d => String(d["ID"]) === String(id));
+              const data = {};
+              const sheetToKey = {
+                  "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
+                  "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成約フラグ":"is_sold", "成フラグ":"is_sold",
+                  "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p",
+                  "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
+                  "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road",
+                  "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
+                  "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
+                  "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis",
+                  "ドライブURL":"drive_url"
+              };
+              Object.keys(sheetToKey).forEach(s => { if (r[s] !== undefined) data[sheetToKey[s]] = r[s]; });
+              return { label: data.tab_name || "区画1", data: data };
+          });
+      }
 
-        activeTabIndex = 0; 
-        loadTabData(currentTabs[0].data); renderTabs();
-        document.querySelector(".panel-body").scrollTop = 0;
-        document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
-        
-        refreshFileList(); 
+      // ★ マーカークリックで「閲覧パネル」を開く
+      window.openView = (ids, marker) => {
+          closePanel();
+          if(marker) highlightMarker(marker);
+          prepareDataForIds(ids);
+          activeTabIndex = 0;
+          renderViewTabs();
+          loadViewData(currentTabs[0].data);
+          document.querySelector("#view-container").scrollTop = 0;
+          document.getElementById("view-panel").style.setProperty("display", "flex", "important");
       };
+
+      // ★ 閲覧パネルから「編集パネル」に切り替える
+      window.switchToEdit = () => {
+          document.getElementById("view-panel").style.setProperty("display", "none", "important");
+          
+          if(currentEditingMarker) {
+              currentEditingMarker.gmpDraggable = true;
+              currentEditingMarker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
+              currentEditingMarker.addListener('dragend', (e) => {
+                  isDragging = false; 
+                  currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
+                  fetchAddress(e.latLng.lat(), e.latLng.lng());
+                  setTimeout(() => { dragLock = false; }, 200);
+              });
+          }
+          loadTabData(currentTabs[activeTabIndex].data); 
+          renderTabs();
+          document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+          refreshFileList();
+      };
+
+      // ★ 編集パネルから「閲覧パネル」に戻る（キャンセル用）
+      window.switchToView = () => {
+          if (!currentTabs[0].data.drive_url && !currentTabs[0].data.name && !currentTabs[0].data.p_first) {
+             closePanel(); return; // 新規作成中のキャンセルの場合は閉じる
+          }
+          // 変更を破棄して元のデータを読み直す
+          if(currentEditingMarker && currentEditingMarker.rowIds) {
+              openView(currentEditingMarker.rowIds, currentEditingMarker);
+          } else { closePanel(); }
+      };
+
+      window.closePanel = () => { 
+          if(currentEditingMarker) {
+              if(!currentEditingMarker.rowIds) currentEditingMarker.map = null; // 新規キャンセル時はピン消去
+              else if(currentEditingMarker.content) currentEditingMarker.content.classList.remove('active-marker');
+              currentEditingMarker.gmpDraggable = false;
+          }
+          currentEditingMarker = null; 
+          document.getElementById("editor-panel").style.setProperty("display", "none", "important"); 
+          document.getElementById("view-panel").style.setProperty("display", "none", "important"); 
+      };
+
+      // --- 閲覧パネルの描画ロジック ---
+      function renderViewTabs() {
+          const bar = document.getElementById("view-tab-bar"); bar.innerHTML = "";
+          currentTabs.forEach((tab, index) => {
+              const el = document.createElement("div");
+              el.className = `tab ${index === activeTabIndex ? 'active' : ''}`; el.innerText = tab.label || `区画${index + 1}`;
+              el.onclick = (e) => { e.stopPropagation(); activeTabIndex = index; loadViewData(currentTabs[index].data); renderViewTabs(); }; 
+              bar.appendChild(el);
+          });
+      }
+
+      function loadViewData(data) {
+          const container = document.getElementById("view-container");
+          
+          // 価格推移の計算
+          let prices = [];
+          if(data.p_first) prices.push({p: data.p_first});
+          if(data.p_c1) prices.push({p: data.p_c1});
+          if(data.p_c2) prices.push({p: data.p_c2});
+          if(data.p_c3) prices.push({p: data.p_c3});
+          
+          let isSold = (data.is_sold === true || data.is_sold === "TRUE");
+          if(isSold && data.p_s) prices.push({p: data.p_s, sold: true});
+          
+          let latestPrice = prices.length > 0 ? formatNumberWithComma(prices[prices.length - 1].p) + " 万円" : "価格未定";
+          if(isSold) latestPrice = "成約済: " + latestPrice;
+          
+          let historyStr = "";
+          if(prices.length > 1) historyStr = prices.map(item => formatNumberWithComma(item.p) + "万").join(" ➔ ");
+
+          // 単価の計算 (MSなら床、それ以外は土地)
+          let unitPriceStr = "";
+          let unitLabel = (data.type && data.type.includes("MS")) ? "マンション床単価" : "土地坪単価";
+          let areaTsubo = (data.type && data.type.includes("MS")) ? parseFloat(data.b_tsubo) : parseFloat(data.t_tsubo);
+          if (prices.length > 0 && areaTsubo > 0) {
+              let latestNum = parseFloat(removeComma(prices[prices.length - 1].p));
+              let subP = parseFloat(data.sub_p) || 0;
+              let calcBase = (unitLabel === "土地坪単価" && data.type.includes("戸建")) ? (latestNum - subP) : latestNum;
+              unitPriceStr = `${unitLabel}: ${(calcBase / areaTsubo).toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪`;
+          }
+
+          let html = `
+              <div style="margin-bottom:10px;">
+                  <span style="background:#e8eaed; color:#5f6368; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold;">${data.type || "種別未定"}</span>
+                  <div style="font-size:16px; font-weight:bold; margin-top:5px; color:#202124;">${data.name || "名称未定"}</div>
+                  <div style="font-size:12px; color:#5f6368; margin-top:2px;">📍 ${data.addr1||""}${data.addr2||""}${data.addr3||""}</div>
+              </div>
+
+              <div class="view-price-box">
+                  <div class="view-latest-price">${latestPrice}</div>
+                  ${historyStr ? `<div class="view-price-history">${historyStr}</div>` : ""}
+                  ${unitPriceStr ? `<div class="view-unit-price">${unitPriceStr}</div>` : ""}
+              </div>
+          `;
+
+          // 共通出力関数
+          const vItem = (label, val, full = false, isAlert = false) => {
+              if(!val && val !== 0) val = "-";
+              return `<div class="view-item ${full ? 'full-width' : ''} ${isAlert ? 'sold-box' : ''}"><span>${label}</span><div>${val}</div></div>`;
+          };
+
+          html += `<div class="section-title">面積・間取り</div><div class="view-grid">`;
+          html += vItem("土地面積", data.t_m2 ? `${data.t_m2} ㎡ (${data.t_tsubo} 坪)` : "");
+          html += vItem("建物面積", data.b_m2 ? `${data.b_m2} ㎡ (${data.b_tsubo} 坪)` : "");
+          html += vItem("間取り", data.layout);
+          if(data.sub_p) html += vItem("想定建物価格", `${data.sub_p} 万円`);
+          html += `</div>`;
+
+          html += `<div class="section-title">公法制限・インフラ</div><div class="view-grid">`;
+          html += vItem("建蔽 / 容積", (data.kenpei||"-") + "% / " + (data.youseki||"-") + "%");
+          html += vItem("公法制限", data.law);
+          html += vItem("接道状況", data.road, true);
+          html += `</div>`;
+
+          html += `<div class="section-title">交通・業者</div><div class="view-grid">`;
+          html += vItem("最寄駅", (data.train_line||"") + " " + (data.train_station||""));
+          html += vItem("徒歩", data.train_walk ? `${data.train_walk} 分` : "");
+          html += vItem("業者・支店", (data.gyosha||"") + " " + (data.shiten||""), true);
+          html += vItem("態様 / 媒体", (data.taiyou||"-") + " / " + (data.media||"-"));
+          html += vItem("担当者", data.intro_user);
+          html += `</div>`;
+
+          html += `<div class="section-title">その他</div><div class="view-grid">`;
+          if(data.price_memo) html += vItem("価格備考", data.price_memo, true);
+          if(data.train_memo) html += vItem("交通備考", data.train_memo, true);
+          if(data.memo) html += vItem("全体備考", data.memo, true);
+          if(data.url1) html += vItem("参考URL 1", `<a href="${data.url1}" target="_blank" style="font-weight:normal;">リンクを開く</a>`);
+          if(data.url2) html += vItem("参考URL 2", `<a href="${data.url2}" target="_blank" style="font-weight:normal;">リンクを開く</a>`);
+          html += vItem("入力担当", data.user);
+          html += `</div>`;
+
+          // ドライブURLボタン
+          if (data.drive_url) {
+              html += `<a href="${data.drive_url}" target="_blank" class="btn-drive-link">📁 この物件の図面・写真を見る<br><span style="font-size:10px; font-weight:normal;">(Googleドライブを開く)</span></a>`;
+          }
+
+          if (data.siire_p || data.siire_m2) {
+              html += `<div class="section-title">仕入情報</div><div class="view-grid">`;
+              html += vItem("購入価格", data.siire_p ? `${data.siire_p} 万円 (${data.siire_basis||"-"})` : "");
+              html += vItem("仕入土地面積", data.siire_m2 ? `${data.siire_m2} ㎡` : "");
+              html += `</div>`;
+          }
+
+          container.innerHTML = html;
+      }
+      // ------------------------------------
 
       function renderTabs() {
         const bar = document.getElementById("tab-bar"); bar.innerHTML = "";
@@ -613,7 +806,6 @@
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         try {
-            // ★ 新規追加：GASにフォルダ名を渡して保存
             const fName = buildFolderName();
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
@@ -624,9 +816,11 @@
             const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "save_multiple", data: payload }) });
             const result = await res.json();
             if(result.error) throw new Error(result.error);
-            await fetchMapData(); sharedInfoWindow.close(); closePanel();
-            btn.disabled = false; btn.innerText = "すべてのタブを一括保存する"; 
-        } catch (e) { alert("保存失敗: " + e.message); btn.disabled = false; btn.innerText = "すべてのタブを一括保存する"; }
+            await fetchMapData(); 
+            // 保存後は閲覧パネルに切り替え
+            switchToView();
+            btn.disabled = false; btn.innerText = "保存して閉じる"; 
+        } catch (e) { alert("保存失敗: " + e.message); btn.disabled = false; btn.innerText = "保存して閉じる"; }
       };
 
       window.executeSearch = () => {
@@ -645,12 +839,10 @@
               const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({id: document.getElementById("form-id").value, mode: "delete"}) });
               const result = await res.json();
               if(result.error) throw new Error(result.error);
-              await fetchMapData(); sharedInfoWindow.close(); closePanel();
+              await fetchMapData(); closePanel();
               btn.disabled = false; btn.innerText = "この区画を削除する"; 
           } catch (e) { alert("削除失敗: " + e.message); btn.disabled = false; btn.innerText = "この区画を削除する"; }
       };
-
-      window.closePanel = () => { if(currentEditingMarker && !currentEditingMarker.rowIds) currentEditingMarker.map = null; currentEditingMarker = null; document.getElementById("editor-panel").style.setProperty("display", "none", "important"); };
 
       async function fetchMapData() {
         try {
@@ -682,16 +874,21 @@
                 else img.src = "https://sohken-homes.github.io/icon_new_house_town.png";
             } else { img.src = (first["成約フラグ"] === true || first["成約フラグ"] === "TRUE") ? ICON_MAP["SOLD"] : (ICON_MAP[first["物件種別"]] || ICON_MAP["DEFAULT"]); }
             img.style.width = "32px"; img.style.cursor = "pointer";
-            const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: img });
+            
+            // ★ マーカーの発光用に、imgをラップするdivを作成
+            const div = document.createElement("div");
+            div.style.position = "relative";
+            div.style.display = "inline-block";
+            div.appendChild(img);
+
+            const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: div });
             marker.rowIds = ids;
-            img.addEventListener("click", (e) => {
+            
+            // ★ マーカークリックで直接「閲覧パネル」を開く
+            div.addEventListener("click", (e) => {
                 e.stopPropagation(); 
-                let content = `<div style="min-width:200px; padding:10px;"><strong>${first["物件名称"] || "未設定"}</strong><br>`;
-                if(rows.length > 1) content += `<span style="color:#1a73e8; font-size:11px;">※多棟現場 (${rows.length}棟/区画)</span><br>`;
-                content += `<button onclick="openEdit('${marker.rowIds}')" style="margin-top:10px; width:100%;">編集</button></div>`;
-                sharedInfoWindow.setContent(content); sharedInfoWindow.open(map, marker);
+                openView(marker.rowIds, marker);
             });
-            img.addEventListener("dblclick", (e) => { e.stopPropagation(); openEdit(marker.rowIds); });
             return marker;
         });
 
