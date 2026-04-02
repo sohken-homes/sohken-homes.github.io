@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.21.0</title>
+    <title>不動産管理マップ v4.22.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -12,12 +12,10 @@
         #address-input { width: 180px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
         #search-btn { padding: 10px 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: bold; }
         
-        /* レイヤ（絞り込み）パネル */
         #filter-panel { position: absolute; top: 125px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
         .filter-item { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #333; }
         .filter-item input { cursor: pointer; }
 
-        /* パネル共通スタイル (★高さを95vhに戻して大きくしました) */
         .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; flex-direction: column; }
         .panel-header { padding: 15px 20px 10px 20px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
         .panel-header h3 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -31,7 +29,6 @@
         .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; scroll-behavior: smooth; }
         .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
         
-        /* --- 閲覧パネル専用スタイル (白ベース) --- */
         #view-panel { background: white; }
         #view-panel .panel-header { background: white; }
         #view-panel .tab-container { background: #f1f3f4; }
@@ -54,7 +51,6 @@
         .btn-drive-link { display: block; background: #e6f4ea; color: #137333; text-align: center; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; border: 1px solid #ceead6; font-size: 14px; margin-top: 5px; }
         .btn-drive-link:hover { background: #d3eadd; }
 
-        /* --- 編集パネル専用スタイル (薄いブルーベース) --- */
         #editor-panel { background: #e3f2fd; } 
         #editor-panel .panel-header { background: #e3f2fd; }
         #editor-panel .panel-header h3 { color: #1565c0; } 
@@ -72,7 +68,7 @@
         .unit-label { font-size: 12px; color: #888; white-space: nowrap; width: 25px; }
         .sold-inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cf1322; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
         .sold-inline input { width: 18px !important; height: 18px !important; margin: 0; cursor: pointer; }
-        /* ★ 編集パネルの単価計算枠を薄い黄色（オレンジ系）に変更 */
+        
         #unit-price-container { background: #fffbe6; padding: 12px; border-radius: 8px; border: 1px solid #ffe58f; margin-top: 10px; }
         .price-display { font-size: 16px; font-weight: bold; color: #d93025; }
         .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; text-align: center; }
@@ -89,7 +85,6 @@
         .file-actions button { font-size: 10px; padding: 2px 6px; margin-left: 4px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: white; }
         .file-actions button.del { color: #cf1322; border-color: #ffa39e; }
 
-        /* --- マーカーの光るアニメーション --- */
         .active-marker { outline: 4px solid #ff9800; outline-offset: 2px; border-radius: 50%; box-shadow: 0 0 15px rgba(255, 152, 0, 0.8); animation: pulse 1.5s infinite; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
@@ -309,7 +304,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbykDD6LxGCzydwRHAgy2B7X6HsUmMzmq60jLc9AkAJp_i6WCapyxypoF3n9uG6ERhk0/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwcNPxEjycOtyMqXO665COP1QXDYhA0oIokwdyhzH0K30UknqgSgkLaDpDSqcMjrUT1/exec";
 
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
@@ -364,7 +359,6 @@
             mapTypeControl: true,
             mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_LEFT },
             streetViewControl: true,
-            // ★ ペグマンの位置を「左下」に変更しました
             streetViewControlOptions: { position: google.maps.ControlPosition.BOTTOM_LEFT }
         });
         geocoder = new google.maps.Geocoder();
@@ -886,11 +880,28 @@
           });
       };
 
+      // ★追加：フォルダ削除のロジックを含んだ新しい deleteProperty 関数
       window.deleteProperty = async () => {
           if(!confirm("この区画/タブを削除しますか？")) return;
+
+          let folderNameToDelete = null;
+          // 多棟現場のうち、最後の1タブを消す場合のみフォルダ削除のアラートを出す
+          if (currentTabs.length === 1) {
+              if(confirm("【確認】この物件の最後のデータです。\nGoogleドライブに保存されている物件ファイル（フォルダ）も一緒にゴミ箱へ移動しますか？\n\n※「キャンセル」を選ぶと、マップからピンは消えますがフォルダ自体は残ります。")) {
+                  folderNameToDelete = buildFolderName();
+              }
+          }
+
           const btn = document.getElementById("delete-btn"); btn.innerText = "削除中..."; btn.disabled = true;
           try {
-              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({id: document.getElementById("form-id").value, mode: "delete"}) });
+              const res = await fetch(GAS_URL, { 
+                  method: "POST", 
+                  body: JSON.stringify({
+                      id: document.getElementById("form-id").value, 
+                      mode: "delete",
+                      folderName: folderNameToDelete // GAS側にフォルダ名を送る
+                  }) 
+              });
               const result = await res.json();
               if(result.error) throw new Error(result.error);
               await fetchMapData(); closePanel();
