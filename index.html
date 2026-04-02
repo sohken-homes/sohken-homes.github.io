@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.13.2</title>
+    <title>不動産管理マップ v4.14.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -42,6 +42,15 @@
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
         .btn-delete { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
         input[readonly] { background-color: #f9f9f9; color: #555; }
+        
+        /* ファイル管理エリア用スタイル */
+        #file-manager { border: 2px dashed #b7eb8f; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 12px; background: #f6ffed; transition: 0.3s; }
+        #file-manager.dragover { background: #e8f0fe; border-color: #1a73e8; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 6px 0; }
+        .file-item a { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a73e8; text-decoration: none; font-size: 12px; }
+        .file-item a:hover { text-decoration: underline; }
+        .file-actions button { font-size: 10px; padding: 2px 6px; margin-left: 4px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: white; }
+        .file-actions button.del { color: #cf1322; border-color: #ffa39e; }
     </style>
 </head>
 <body>
@@ -70,17 +79,11 @@
                         <select id="form-type">
                             <option value="">選択してください</option>
                             <optgroup label="他社分譲"><option value="新築戸建">新築戸建</option><option value="中古戸建">中古戸建</option><option value="売地">売地</option></optgroup>
-                            <optgroup label="自社分譲">
-                                <option value="自社新築">自社新築</option><option value="自社中古">自社中古</option><option value="自社売地">自社売地</option>
-                                <option value="自社新築(情開)">自社新築(情開)</option><option value="自社中古(情開)">自社中古(情開)</option><option value="自社売地(情開)">自社売地(情開)</option><option value="自社中古MS(情開)">自社中古MS(情開)</option>
-                            </optgroup>
+                            <optgroup label="自社分譲"><option value="自社新築">自社新築</option><option value="自社中古">自社中古</option><option value="自社売地">自社売地</option><option value="自社新築(情開)">自社新築(情開)</option><option value="自社中古(情開)">自社中古(情開)</option><option value="自社売地(情開)">自社売地(情開)</option><option value="自社中古MS(情開)">自社中古MS(情開)</option></optgroup>
                             <optgroup label="マンション・その他"><option value="新築MS">新築MS</option><option value="中古MS">中古MS</option><option value="査定依頼">査定依頼</option><option value="査定依頼MS">査定依頼MS</option></optgroup>
                         </select>
                     </div>
-                    <div class="flex-item">
-                        <label>区画番号</label>
-                        <input type="text" id="form-tab-name" placeholder="例：1号棟">
-                    </div>
+                    <div class="flex-item"><label>区画番号</label><input type="text" id="form-tab-name" placeholder="例：1号棟"></div>
                 </div>
             </div>
             <div class="form-group"><label>物件名称/売主業者の場合の業者名</label><input type="text" id="form-name" placeholder="例：㈱〇〇・〇〇シリーズ荻窪など"></div>
@@ -88,27 +91,38 @@
                 <label>住所</label>
                 <div class="flex-row">
                     <div class="flex-item"><input type="text" id="form-addr1" placeholder="市区"></div>
-                    <div class="flex-item"><input type="text" id="form-addr2" placeholder="丁目"></div>
+                    <div class="flex-item"><input type="text" id="form-addr2" placeholder="町名"></div>
                     <div class="flex-item"><input type="text" id="form-addr3" placeholder="以降"></div>
+                </div>
+            </div>
+
+            <div class="section-title">物件ファイル (図面・写真など)</div>
+            <div id="file-manager">
+                <p style="font-size: 11px; color: #666; margin: 0 0 10px 0;">ここにファイルをドラッグ＆ドロップ<br>または<br>
+                <input type="file" id="file-input" style="display:none;" multiple>
+                <button type="button" onclick="document.getElementById('file-input').click()" style="font-size:11px; padding: 4px 8px; margin-top:5px;">ファイルを選択</button>
+                </p>
+                <div id="file-list" style="text-align: left; font-size: 12px; max-height: 150px; overflow-y: auto; background: white; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
+                    <div style='color:#999; text-align:center;'>住所を入力するとファイル一覧が表示されます</div>
                 </div>
             </div>
 
             <div class="section-title">価格推移 (単位: 万円)</div>
             <div class="form-group">
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <div class="flex-item"><label>初回入力日</label><input type="text" id="form-d-first" placeholder="月/日または年/月/日" class="date-input"></div>
+                    <div class="flex-item"><label>初回入力日</label><input type="text" id="form-d-first" placeholder="年/月/日" class="date-input"></div>
                     <div class="flex-item"><label>初回価格</label><input type="text" id="form-p-first" placeholder="初回価格" class="comma-input only-num"></div>
                 </div>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <div class="flex-item"><label>変更日1</label><input type="text" id="form-d-c1" placeholder="月/日または年/月/日" class="date-input"></div>
+                    <div class="flex-item"><label>変更日1</label><input type="text" id="form-d-c1" placeholder="年/月/日" class="date-input"></div>
                     <div class="flex-item"><label>価格1</label><input type="text" id="form-p-c1" placeholder="変更価格1" class="comma-input only-num"></div>
                 </div>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <div class="flex-item"><label>変更日2</label><input type="text" id="form-d-c2" placeholder="月/日または年/月/日" class="date-input"></div>
+                    <div class="flex-item"><label>変更日2</label><input type="text" id="form-d-c2" placeholder="年/月/日" class="date-input"></div>
                     <div class="flex-item"><label>価格2</label><input type="text" id="form-p-c2" placeholder="変更価格2" class="comma-input only-num"></div>
                 </div>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <div class="flex-item"><label>変更日3</label><input type="text" id="form-d-c3" placeholder="月/日または年/月/日" class="date-input"></div>
+                    <div class="flex-item"><label>変更日3</label><input type="text" id="form-d-c3" placeholder="年/月/日" class="date-input"></div>
                     <div class="flex-item"><label>価格3</label><input type="text" id="form-p-c3" placeholder="変更価格3" class="comma-input only-num"></div>
                 </div>
                 <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -116,11 +130,10 @@
                     <div class="sold-inline"><input type="checkbox" id="form-is-sold"> 成約済</div>
                 </div>
                 <div class="flex-row" style="margin-bottom:8px;">
-                    <div class="flex-item"><input type="text" id="form-d-s" placeholder="月/日または年/月/日" class="date-input"></div>
+                    <div class="flex-item"><input type="text" id="form-d-s" placeholder="年/月/日" class="date-input"></div>
                     <div class="flex-item"><input type="text" id="form-p-s" placeholder="成約価格" class="comma-input only-num"></div>
                 </div>
-                <label>備考（価格）</label>
-                <textarea id="form-price-memo" rows="2" placeholder="理由や履歴など"></textarea>
+                <label>備考（価格）</label><textarea id="form-price-memo" rows="2" placeholder="理由や履歴など"></textarea>
             </div>
 
             <div class="section-title">面積詳細</div>
@@ -137,8 +150,7 @@
                     <input type="text" id="form-b-m2" placeholder="0.00" class="comma-input area-input only-num flex-item"><span class="unit-label">㎡</span>
                     <input type="text" id="form-b-tsubo" placeholder="0.00" class="comma-input area-input flex-item" readonly><span class="unit-label">坪</span>
                 </div>
-                <label>間取り</label>
-                <input type="text" id="form-layout" placeholder="4LDK">
+                <label>間取り</label><input type="text" id="form-layout" placeholder="4LDK">
             </div>
 
             <div class="section-title">単価計算（自動反映）</div>
@@ -148,8 +160,7 @@
                     <input type="text" id="form-sub-price" class="comma-input only-num">
                 </div>
                 <div style="display:flex; justify-content:space-between;">
-                    <span id="label-land" style="font-size:12px;">土地坪単価：</span>
-                    <span id="val-land" class="price-display">- 万円</span>
+                    <span id="label-land" style="font-size:12px;">土地坪単価：</span><span id="val-land" class="price-display">- 万円</span>
                 </div>
             </div>
 
@@ -163,8 +174,7 @@
                     <div class="flex-item"><label>取引態様</label><select id="form-taiyou"><option value="">選択</option><option value="売主">売主</option><option value="仲介(専)">仲介(専)</option><option value="仲介(一般)">仲介(一般)</option><option value="販売代理">販売代理</option></select></div>
                     <div class="flex-item"><label>登録媒体</label><select id="form-media"><option value="">選択</option><option value="レインズ">レインズ</option><option value="仲介HP">仲介HP</option><option value="売主HP">売主HP</option><option value="ポータル">ポータル</option><option value="紹介">紹介</option><option value="その他">その他</option></select></div>
                 </div>
-                <label>紹介担当者</label>
-                <input type="text" id="form-intro-user" placeholder="担当者名">
+                <label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="担当者名">
             </div>
 
             <div class="section-title">公法制限・接道</div>
@@ -179,9 +189,7 @@
 
             <div class="section-title">交通</div>
             <div class="form-group">
-                <div class="flex-row" style="margin-bottom:5px;">
-                    <div class="flex-item"><label>路線名</label><input type="text" id="form-train-line" placeholder="路線名"></div>
-                </div>
+                <div class="flex-row" style="margin-bottom:5px;"><div class="flex-item"><label>路線名</label><input type="text" id="form-train-line" placeholder="路線名"></div></div>
                 <div class="flex-row" style="margin-bottom:5px;">
                     <div class="flex-item"><label>最寄駅</label><input type="text" id="form-train-station" placeholder="最寄駅"></div>
                     <div class="flex-item" style="display:flex; align-items:flex-end; gap:4px;">
@@ -210,10 +218,7 @@
                     <div class="flex-item"><label>土地面積(㎡)</label><input type="text" id="siire-m2" placeholder="0.00" class="comma-input area-input only-num"></div>
                     <div class="flex-item"><label>土地面積(坪)</label><input type="text" id="siire-tsubo" placeholder="0.00" class="comma-input area-input" readonly></div>
                 </div>
-                <div class="siire-unit-box" style="margin-top:10px;">
-                    <label style="font-size:11px; color:#52c41a;">仕入坪単価：</label>
-                    <span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span>
-                </div>
+                <div class="siire-unit-box" style="margin-top:10px;"><label style="font-size:11px; color:#52c41a;">仕入坪単価：</label><span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span></div>
             </div>
 
             <button class="btn-save" onclick="submitForm()">すべてのタブを一括保存する</button>
@@ -228,7 +233,9 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbye18omDNeH9wMlQoTcoShnOhtcMIHiygzMT_A407mGMk6Fm3wuMiZlPMMgHqdxRKlB/exec";
+      
+      // ★ 新しく発行したURLをここに貼ってください
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwC-63fbHWihSU4klThaNjc8j42vx3gidspuBBZssLjWnRdhDcfrdFaS7l61sQFqUrD/exec";
 
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
@@ -264,9 +271,7 @@
 
       let map, sharedInfoWindow, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
-      let isDragging = false; 
-      let dragLock = false; 
-      let clusterer = null; 
+      let isDragging = false; let dragLock = false; let clusterer = null; 
 
       async function initMap() {
         const { Map, InfoWindow } = google.maps;
@@ -275,12 +280,9 @@
         
         map.addListener("click", (e) => { 
             if(dragLock || isDragging) return;
-            sharedInfoWindow.close(); 
-            closePanel(); 
+            sharedInfoWindow.close(); closePanel(); 
         });
         map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
-        document.getElementById("editor-panel").style.setProperty("display", "none", "important");
-        
         fetchMapData();
       }
 
@@ -288,12 +290,16 @@
           let address = fullAddress.replace(/^日本、/, "").replace(/^〒\d{3}-\d{4}\s*/, "");
           address = address.replace(/^.{2,3}[都道府県]/, "");
           let city = "", chome = "", banchi = "";
+          
           const cityMatch = address.match(/^.*?[市区町村]/);
           if (cityMatch) { city = cityMatch[0]; address = address.replace(city, ""); }
+          
+          // ★ 丁目を除外し「町名」のみにする賢いロジック
           if (address.includes("丁目")) {
-              const idx = address.indexOf("丁目") + 2; 
-              chome = address.substring(0, idx);
-              banchi = address.substring(idx).trim();
+              const idx = address.indexOf("丁目"); 
+              let rawChome = address.substring(0, idx); // 例：阿佐谷南1
+              chome = rawChome.replace(/[0-9０-９]+$/, ''); // 数字を削除 -> 阿佐谷南
+              banchi = address.substring(address.indexOf(chome) + chome.length).trim(); // -> 1丁目2-3
           } else {
               const numMatch = address.match(/[0-9０-９]/);
               if (numMatch) {
@@ -302,46 +308,37 @@
                   banchi = address.substring(numIdx).trim();
               } else { chome = address; }
           }
+          
           document.getElementById("form-addr1").value = city;
           document.getElementById("form-addr2").value = chome;
           document.getElementById("form-addr3").value = banchi;
           saveCurrentTabData();
+          refreshFileList(city, chome); // 住所が入ったらファイルリスト更新
       }
 
       function fetchAddress(lat, lng) {
           geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-              if (status === "OK" && results[0]) { parseAddress(results[0].formatted_address); }
+              if (status === "OK" && results[0]) parseAddress(results[0].formatted_address);
           });
       }
 
       window.addNewProperty = (lat, lng) => {
-        if(currentEditingMarker && !currentEditingMarker.rowIds) {
-            currentEditingMarker.map = null;
-            currentEditingMarker = null;
-        }
-        
-        const img = document.createElement("img");
-        img.src = ICON_MAP["DEFAULT"];
-        img.style.width = "32px"; img.style.cursor = "pointer";
-
+        if(currentEditingMarker && !currentEditingMarker.rowIds) { currentEditingMarker.map = null; currentEditingMarker = null; }
+        const img = document.createElement("img"); img.src = ICON_MAP["DEFAULT"]; img.style.width = "32px"; img.style.cursor = "pointer";
         const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true, content: img });
         currentEditingMarker = marker;
         currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng, tab_name: "区画1" } }];
         activeTabIndex = 0; 
-
         marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
         marker.addListener('dragend', (e) => {
             isDragging = false; 
-            const newPos = e.latLng;
-            currentTabs.forEach(tab => { tab.data.lat = newPos.lat(); tab.data.lng = newPos.lng(); });
-            fetchAddress(newPos.lat(), newPos.lng());
+            currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
+            fetchAddress(e.latLng.lat(), e.latLng.lng());
             setTimeout(() => { dragLock = false; }, 200);
         });
-
         fetchAddress(lat, lng);
         loadTabData(currentTabs[0].data); renderTabs();
-        const panelBody = document.querySelector(".panel-body");
-        if(panelBody) panelBody.scrollTop = 0;
+        document.querySelector(".panel-body").scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
       };
 
@@ -355,9 +352,8 @@
             marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
             marker.addListener('dragend', (e) => {
                 isDragging = false; 
-                const newPos = e.latLng;
-                currentTabs.forEach(tab => { tab.data.lat = newPos.lat(); tab.data.lng = newPos.lng(); });
-                fetchAddress(newPos.lat(), newPos.lng());
+                currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
+                fetchAddress(e.latLng.lat(), e.latLng.lng());
                 setTimeout(() => { dragLock = false; }, 200);
             });
         }
@@ -365,36 +361,25 @@
         currentTabs = idArray.map(id => {
             const r = allData.find(d => String(d["ID"]) === String(id));
             const data = {};
-            const sheetToKey = { 
-                "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3", 
-                "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成フラグ":"is_sold", "成約フラグ":"is_sold", 
-                "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p", 
-                "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user", 
-                "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road", 
-                "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
-                "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user", 
-                "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis" 
-            };
-            Object.keys(sheetToKey).forEach(s => data[sheetToKey[s]] = r[s] !== undefined ? r[s] : "");
+            Object.keys(FORM_MAP).forEach(idKey => { data[FORM_MAP[idKey]] = r[FORM_MAP[idKey]] !== undefined ? r[FORM_MAP[idKey]] : ""; });
             return { label: data.tab_name || "区画1", data: data };
         });
 
         activeTabIndex = 0; 
-        loadTabData(currentTabs[0].data); 
-        renderTabs();
-        const panelBody = document.querySelector(".panel-body");
-        if(panelBody) panelBody.scrollTop = 0;
+        loadTabData(currentTabs[0].data); renderTabs();
+        document.querySelector(".panel-body").scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+        
+        // ファイルリストの読み込み
+        refreshFileList(currentTabs[0].data.addr1, currentTabs[0].data.addr2);
       };
 
       function renderTabs() {
         const bar = document.getElementById("tab-bar"); bar.innerHTML = "";
         currentTabs.forEach((tab, index) => {
             const el = document.createElement("div");
-            el.className = `tab ${index === activeTabIndex ? 'active' : ''}`;
-            el.innerText = tab.label || `区画${index + 1}`;
-            el.onclick = (e) => { e.stopPropagation(); switchTab(index); };
-            bar.appendChild(el);
+            el.className = `tab ${index === activeTabIndex ? 'active' : ''}`; el.innerText = tab.label || `区画${index + 1}`;
+            el.onclick = (e) => { e.stopPropagation(); switchTab(index); }; bar.appendChild(el);
         });
         const addBtn = document.createElement("div"); addBtn.className = "tab tab-add"; addBtn.innerText = "＋追加";
         addBtn.onclick = (e) => { e.stopPropagation(); addTab(); }; bar.appendChild(addBtn);
@@ -406,7 +391,6 @@
         saveCurrentTabData();
         const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
         baseData.id = ""; baseData.tab_name = `区画${currentTabs.length + 1}`;
-        // ★ 各種日付（d_first, d_c1, d_c2, d_c3, d_s）をクリア対象に追加しました
         ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold", "d_first", "d_c1", "d_c2", "d_c3", "d_s"].forEach(k => baseData[k] = "");
         currentTabs.push({ label: baseData.tab_name, data: baseData });
         activeTabIndex = currentTabs.length - 1; loadTabData(baseData); renderTabs();
@@ -416,9 +400,7 @@
         const data = currentTabs[activeTabIndex].data;
         Object.keys(FORM_MAP).forEach(id => {
             const el = document.getElementById(id); if(!el) return;
-            const key = FORM_MAP[id];
-            if(el.type === 'checkbox') data[key] = el.checked;
-            else data[key] = removeComma(el.value);
+            if(el.type === 'checkbox') data[FORM_MAP[id]] = el.checked; else data[FORM_MAP[id]] = removeComma(el.value);
         });
         currentTabs[activeTabIndex].label = data.tab_name;
       }
@@ -426,24 +408,101 @@
       function loadTabData(data) {
         Object.keys(FORM_MAP).forEach(id => {
             const el = document.getElementById(id); if(!el) return;
-            const key = FORM_MAP[id];
-            const val = data[key] !== undefined ? data[key] : "";
-            
-            if(el.type === 'checkbox') {
-                el.checked = !!val;
-            } else if (el.classList.contains('date-input')) {
-                el.value = formatToFullDate(val);
-            } else if (el.classList.contains('area-input')) {
-                el.value = formatAreaWithComma(val);
-            } else if (el.classList.contains('comma-input')) {
-                el.value = formatNumberWithComma(val);
-            } else {
-                el.value = val;
-            }
+            const val = data[FORM_MAP[id]] !== undefined ? data[FORM_MAP[id]] : "";
+            if(el.type === 'checkbox') el.checked = !!val;
+            else if (el.classList.contains('date-input')) el.value = formatToFullDate(val);
+            else if (el.classList.contains('area-input')) el.value = formatAreaWithComma(val);
+            else if (el.classList.contains('comma-input')) el.value = formatNumberWithComma(val);
+            else el.value = val;
         });
         document.getElementById("delete-btn").style.display = data.id ? "block" : "none";
         updateAutoFields();
       }
+
+      // --- ファイル管理（D&D、取得、アップロード、削除）のロジック ---
+      const dropZone = document.getElementById('file-manager');
+      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+      dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+      document.getElementById('file-input').addEventListener('change', (e) => handleFiles(e.target.files));
+
+      function handleFiles(files) {
+          const addr1 = document.getElementById('form-addr1').value.trim();
+          const addr2 = document.getElementById('form-addr2').value.trim();
+          if (!addr1 || !addr2) { alert("市区と町名を入力してからアップロードしてください。"); return; }
+          for (let i = 0; i < files.length; i++) uploadFile(files[i], addr1, addr2);
+      }
+
+      function uploadFile(file, addr1, addr2) {
+          const listEl = document.getElementById('file-list');
+          listEl.innerHTML = `<div style="color:#1a73e8; text-align:center;">送信中: ${file.name}...</div>` + listEl.innerHTML;
+          
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+              try {
+                  const res = await fetch(GAS_URL, {
+                      method: "POST",
+                      body: JSON.stringify({ mode: "upload_file", addr1, addr2, filename: file.name, data: e.target.result })
+                  });
+                  const result = await res.json();
+                  if (result.error) throw new Error(result.error);
+                  refreshFileList(addr1, addr2);
+              } catch (err) { alert("アップロード失敗: " + err.message); refreshFileList(addr1, addr2); }
+          };
+          reader.readAsDataURL(file);
+      }
+
+      async function refreshFileList(addr1, addr2) {
+          const listEl = document.getElementById('file-list');
+          if (!addr1 || !addr2) { listEl.innerHTML = "<div style='color:#999; text-align:center;'>住所(市区・町名)を入力するとファイル一覧が表示されます</div>"; return; }
+          listEl.innerHTML = "<div style='color:#666; text-align:center;'>ファイル一覧を取得中...</div>";
+          try {
+              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "get_files", addr1, addr2 }) });
+              const result = await res.json();
+              if (result.error) throw new Error(result.error);
+              
+              listEl.innerHTML = "";
+              if (result.files.length === 0) { listEl.innerHTML = "<div style='color:#999; text-align:center;'>ファイルはまだありません</div>"; return; }
+              
+              result.files.forEach(f => {
+                  const row = document.createElement("div"); row.className = "file-item";
+                  const link = document.createElement("a"); link.href = f.url; link.target = "_blank"; link.innerText = f.name;
+                  const actions = document.createElement("div"); actions.className = "file-actions";
+                  
+                  const btnRen = document.createElement("button"); btnRen.innerText = "変更";
+                  btnRen.onclick = () => renameFile(f.id, f.name, addr1, addr2);
+                  const btnDel = document.createElement("button"); btnDel.innerText = "削除"; btnDel.className = "del";
+                  btnDel.onclick = () => deleteFile(f.id, addr1, addr2);
+                  
+                  actions.appendChild(btnRen); actions.appendChild(btnDel);
+                  row.appendChild(link); row.appendChild(actions); listEl.appendChild(row);
+              });
+          } catch (err) { listEl.innerHTML = `<div style='color:red; text-align:center;'>取得失敗: ${err.message}</div>`; }
+      }
+
+      async function renameFile(id, oldName, addr1, addr2) {
+          const newName = prompt("新しいファイル名を入力してください", oldName);
+          if (!newName || newName === oldName) return;
+          try {
+              document.getElementById('file-list').innerHTML = "<div style='color:#666; text-align:center;'>名前を変更中...</div>";
+              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "rename_file", fileId: id, newName: newName }) });
+              const result = await res.json();
+              if (result.error) throw new Error(result.error);
+              refreshFileList(addr1, addr2);
+          } catch(err) { alert("名前変更失敗: " + err.message); refreshFileList(addr1, addr2); }
+      }
+
+      async function deleteFile(id, addr1, addr2) {
+          if (!confirm("本当にこのファイルを削除しますか？\n(Googleドライブのゴミ箱に移動します)")) return;
+          try {
+              document.getElementById('file-list').innerHTML = "<div style='color:#666; text-align:center;'>削除中...</div>";
+              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "delete_file", fileId: id }) });
+              const result = await res.json();
+              if (result.error) throw new Error(result.error);
+              refreshFileList(addr1, addr2);
+          } catch(err) { alert("削除失敗: " + err.message); refreshFileList(addr1, addr2); }
+      }
+      // ------------------------------------------------------------
 
       function updateAutoFields() {
         const type = document.getElementById('form-type').value;
@@ -454,7 +513,6 @@
         const siireM2 = parseFloat(removeComma(document.getElementById('siire-m2').value)) || 0;
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         
-        // ★ tsubo の自動計算結果も「.00」でフォーマットしてセットします
         document.getElementById('siire-tsubo').value = formatAreaWithComma(sTsubo);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
         document.getElementById('build-price-input').style.display = (type.includes("戸建") || type.includes("自社")) ? "block" : "none";
@@ -464,101 +522,52 @@
         }
       }
 
-      // 汎用のカンマ付け処理（価格など）
       function formatNumberWithComma(val) {
-          if (!val && val !== 0 && val !== "0") return "";
-          let raw = val.toString().replace(/,/g, "");
+          if (!val && val !== 0 && val !== "0") return ""; let raw = val.toString().replace(/,/g, "");
           if (isNaN(raw) || raw === "") return val;
-          const parts = raw.split(".");
-          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-          return parts.join(".");
+          const parts = raw.split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
       }
-
-      // ★ 面積専用のカンマ付け＆小数第2位固定の処理を追加
       function formatAreaWithComma(val) {
-          if (!val && val !== 0 && val !== "0") return "";
-          let raw = val.toString().replace(/,/g, "");
+          if (!val && val !== 0 && val !== "0") return ""; let raw = val.toString().replace(/,/g, "");
           if (isNaN(raw) || raw === "") return val;
-          // 強制的に小数点第2位まで表示 (e.g. 100 -> 100.00)
-          let parts = Number(raw).toFixed(2).split(".");
-          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-          return parts.join(".");
+          let parts = Number(raw).toFixed(2).split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
       }
-
       function removeComma(val) { return val.toString().replace(/,/g, ""); }
       
       function formatToFullDate(val) {
-          if (!val) return ""; 
-          let input = val.toString().trim();
-
+          if (!val) return ""; let input = val.toString().trim();
           if (input.includes('T') && input.includes('Z')) {
-              const d = new Date(input);
-              if (!isNaN(d)) return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+              const d = new Date(input); if (!isNaN(d)) return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
           }
-
-          input = input.replace(/[０-９／]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-          input = input.replace(/[-\.]/g, '/');
-
-          let year, month, day;
-          const parts = input.split('/');
-
-          if (parts.length === 2) {
-              year = new Date().getFullYear();
-              month = parseInt(parts[0], 10);
-              day = parseInt(parts[1], 10);
-          } else if (parts.length === 3) {
-              year = parseInt(parts[0], 10);
-              if (year < 100) year += 2000;
-              month = parseInt(parts[1], 10);
-              day = parseInt(parts[2], 10);
-          } else if (input.length === 8 && !isNaN(input)) {
-              year = parseInt(input.substring(0,4), 10);
-              month = parseInt(input.substring(4,6), 10);
-              day = parseInt(input.substring(6,8), 10);
-          } else {
-              return input;
-          }
-
+          input = input.replace(/[０-９／]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/[-\.]/g, '/');
+          let year, month, day; const parts = input.split('/');
+          if (parts.length === 2) { year = new Date().getFullYear(); month = parseInt(parts[0], 10); day = parseInt(parts[1], 10); }
+          else if (parts.length === 3) { year = parseInt(parts[0], 10); if (year < 100) year += 2000; month = parseInt(parts[1], 10); day = parseInt(parts[2], 10); }
+          else if (input.length === 8 && !isNaN(input)) { year = parseInt(input.substring(0,4), 10); month = parseInt(input.substring(4,6), 10); day = parseInt(input.substring(6,8), 10); }
+          else { return input; }
           const d = new Date(year, month - 1, day);
-          if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) {
-              return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
-          } else {
-              return ""; 
-          }
+          if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+          else return ""; 
       }
 
       window.submitForm = async () => {
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         try {
-            const payload = currentTabs.map(tab => tab.data);
-            const res = await fetch(GAS_URL, { 
-                method: "POST", 
-                body: JSON.stringify({ mode: "save_multiple", data: payload }) 
-            });
+            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "save_multiple", data: currentTabs.map(t => t.data) }) });
             const result = await res.json();
             if(result.error) throw new Error(result.error);
-            
-            await fetchMapData(); 
-            sharedInfoWindow.close();
-            closePanel();
-            
+            await fetchMapData(); sharedInfoWindow.close(); closePanel();
             btn.disabled = false; btn.innerText = "すべてのタブを一括保存する"; 
-        } catch (e) { 
-            alert("保存失敗: " + e.message); 
-            btn.disabled = false; btn.innerText = "すべてのタブを一括保存する"; 
-        }
+        } catch (e) { alert("保存失敗: " + e.message); btn.disabled = false; btn.innerText = "すべてのタブを一括保存する"; }
       };
 
       window.executeSearch = () => {
           const address = document.getElementById("address-input").value;
           if(!address) return;
           geocoder.geocode({ address: address }, (res, status) => {
-              if (status === "OK") { 
-                  map.setCenter(res[0].geometry.location); 
-                  map.setZoom(17);
-                  addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); 
-              } else { alert("住所が見つかりませんでした"); }
+              if (status === "OK") { map.setCenter(res[0].geometry.location); map.setZoom(17); addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); }
+              else { alert("住所が見つかりませんでした"); }
           });
       };
 
@@ -569,171 +578,107 @@
               const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({id: document.getElementById("form-id").value, mode: "delete"}) });
               const result = await res.json();
               if(result.error) throw new Error(result.error);
-              
-              await fetchMapData();
-              sharedInfoWindow.close();
-              closePanel();
-              
+              await fetchMapData(); sharedInfoWindow.close(); closePanel();
               btn.disabled = false; btn.innerText = "この区画を削除する"; 
-          } catch (e) { 
-              alert("削除失敗: " + e.message); 
-              btn.disabled = false; btn.innerText = "この区画を削除する"; 
-          }
+          } catch (e) { alert("削除失敗: " + e.message); btn.disabled = false; btn.innerText = "この区画を削除する"; }
       };
 
-      window.closePanel = () => {
-          if(currentEditingMarker && !currentEditingMarker.rowIds) {
-              currentEditingMarker.map = null;
-          }
-          currentEditingMarker = null;
-          document.getElementById("editor-panel").style.setProperty("display", "none", "important");
-      };
+      window.closePanel = () => { if(currentEditingMarker && !currentEditingMarker.rowIds) currentEditingMarker.map = null; currentEditingMarker = null; document.getElementById("editor-panel").style.setProperty("display", "none", "important"); };
 
       async function fetchMapData() {
         try {
-            const res = await fetch(GAS_URL, { redirect: "follow" }); 
-            const result = await res.json();
+            const res = await fetch(GAS_URL, { redirect: "follow" }); const result = await res.json();
             if(result.error) { alert("データの読み込みに失敗しました：\n" + result.error); return; }
-            allData = result;
-            renderMarkers(); 
-        } catch (e) {
-            console.error("CORSや通信エラー:", e);
-            alert("通信エラーが発生しました。GASのURLが正しいか確認してください。");
-        }
+            allData = result; renderMarkers(); 
+        } catch (e) { alert("通信エラーが発生しました。GASのURLが正しいか確認してください。"); }
       }
 
       function renderMarkers() {
-        if (clusterer) {
-            clusterer.clearMarkers();
-        }
-        markersList.forEach(m => m.map = null);
-        markersList = [];
-
+        if (clusterer) clusterer.clearMarkers();
+        markersList.forEach(m => m.map = null); markersList = [];
         const groups = {};
         allData.forEach(row => {
             if (!row["緯度"] || !row["経度"]) return;
             const key = `${Number(row["緯度"]).toFixed(6)}_${Number(row["経度"]).toFixed(6)}`;
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(row);
+            if (!groups[key]) groups[key] = []; groups[key].push(row);
         });
-
         markersList = Object.keys(groups).map(key => {
-            const rows = groups[key];
-            const first = rows[0];
-            const ids = rows.map(r => r["ID"]).join(",");
-            
+            const rows = groups[key]; const first = rows[0]; const ids = rows.map(r => r["ID"]).join(",");
             const img = document.createElement("img");
             if (rows.length > 1) {
                 const allSold = rows.every(r => r["成約フラグ"] === true || r["成約フラグ"] === "TRUE");
                 const hasJishaNew = rows.some(r => r["物件種別"] === "自社新築");
                 const hasJishaNewInfo = rows.some(r => r["物件種別"] === "自社新築(情開)");
-
                 if (allSold) img.src = "https://sohken-homes.github.io/icon_town-sold.png";
                 else if (hasJishaNew) img.src = "https://sohken-homes.github.io/icon_jisha_new_town.png";
                 else if (hasJishaNewInfo) img.src = "https://sohken-homes.github.io/icon_jisha_new_info_town.png";
                 else img.src = "https://sohken-homes.github.io/icon_new_house_town.png";
-            } else {
-                img.src = (first["成約フラグ"] === true || first["成約フラグ"] === "TRUE") ? ICON_MAP["SOLD"] : (ICON_MAP[first["物件種別"]] || ICON_MAP["DEFAULT"]);
-            }
+            } else { img.src = (first["成約フラグ"] === true || first["成約フラグ"] === "TRUE") ? ICON_MAP["SOLD"] : (ICON_MAP[first["物件種別"]] || ICON_MAP["DEFAULT"]); }
             img.style.width = "32px"; img.style.cursor = "pointer";
-            
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: img });
             marker.rowIds = ids;
-            
             img.addEventListener("click", (e) => {
                 e.stopPropagation(); 
-                const fmt = (v) => v ? Number(v).toLocaleString() : "-";
                 let content = `<div style="min-width:200px; padding:10px;"><strong>${first["物件名称"] || "未設定"}</strong><br>`;
                 if(rows.length > 1) content += `<span style="color:#1a73e8; font-size:11px;">※多棟現場 (${rows.length}棟/区画)</span><br>`;
                 content += `<button onclick="openEdit('${marker.rowIds}')" style="margin-top:10px; width:100%;">編集</button></div>`;
-                sharedInfoWindow.setContent(content);
-                sharedInfoWindow.open(map, marker);
+                sharedInfoWindow.setContent(content); sharedInfoWindow.open(map, marker);
             });
             img.addEventListener("dblclick", (e) => { e.stopPropagation(); openEdit(marker.rowIds); });
-            
             return marker;
         });
 
         if (!clusterer) {
-            clusterer = new markerClusterer.MarkerClusterer({ 
-                map, 
-                markers: markersList,
-                onClusterClick: (event, cluster, map) => {
-                    const bounds = new google.maps.LatLngBounds();
-                    cluster.markers.forEach(m => bounds.extend(m.position));
-                    map.fitBounds(bounds, 100); 
-                }
-            });
-        } else {
-            clusterer.addMarkers(markersList);
-        }
+            clusterer = new markerClusterer.MarkerClusterer({ map, markers: markersList, onClusterClick: (event, cluster, map) => { const bounds = new google.maps.LatLngBounds(); cluster.markers.forEach(m => bounds.extend(m.position)); map.fitBounds(bounds, 100); } });
+        } else { clusterer.addMarkers(markersList); }
       }
 
       window.addEventListener('load', () => {
         const container = document.getElementById("form-container");
-        
         container.addEventListener('input', (e) => {
             if (e.target.classList.contains('only-num')) {
-                let val = e.target.value
-                    .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-                    .replace(/，/g, ',')
-                    .replace(/．/g, '.');
+                let val = e.target.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/，/g, ',').replace(/．/g, '.');
                 e.target.value = val.replace(/[^0-9\.\,]/g, '');
             }
         });
-
         container.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                const inputs = Array.from(container.querySelectorAll('input, select, button'));
-                const index = inputs.indexOf(e.target);
-                if (index > -1 && index < inputs.length - 1) inputs[index + 1].focus();
+                e.preventDefault(); const inputs = Array.from(container.querySelectorAll('input, select, button'));
+                const index = inputs.indexOf(e.target); if (index > -1 && index < inputs.length - 1) inputs[index + 1].focus();
             }
         });
-
         container.addEventListener('blur', (e) => {
-            // ★ 入力欄のフォーカスが外れたとき、面積なら強制的に .00 を付与
-            if(e.target.classList.contains('area-input')) { 
-                e.target.value = formatAreaWithComma(e.target.value); 
-                updateAutoFields(); 
-            } else if(e.target.classList.contains('comma-input')) { 
-                e.target.value = formatNumberWithComma(e.target.value); 
-                updateAutoFields(); 
-            }
+            if(e.target.classList.contains('area-input')) { e.target.value = formatAreaWithComma(e.target.value); updateAutoFields(); } 
+            else if(e.target.classList.contains('comma-input')) { e.target.value = formatNumberWithComma(e.target.value); updateAutoFields(); }
             if(e.target.classList.contains('date-input')) e.target.value = formatToFullDate(e.target.value);
-        }, true);
-        
-        container.addEventListener('focus', (e) => {
-            if(e.target.classList.contains('comma-input') || e.target.classList.contains('area-input')) {
-                e.target.value = removeComma(e.target.value);
+            
+            // ★住所(市区・町名)からフォーカスが外れたら、自動でファイル一覧を更新
+            if(e.target.id === 'form-addr1' || e.target.id === 'form-addr2') {
+                const a1 = document.getElementById('form-addr1').value.trim();
+                const a2 = document.getElementById('form-addr2').value.trim();
+                refreshFileList(a1, a2);
             }
         }, true);
-        
+        container.addEventListener('focus', (e) => {
+            if(e.target.classList.contains('comma-input') || e.target.classList.contains('area-input')) e.target.value = removeComma(e.target.value);
+        }, true);
         document.getElementById('form-type').addEventListener('change', updateAutoFields);
         
-        // ★ 自動計算される面積（坪）もフォーカスが外れたタイミングで「.00」形式に整形します
         const syncArea = (m2Id, tsuboId) => {
             const el = document.getElementById(m2Id);
             if(el) { el.addEventListener('blur', (e) => {
                 const v = removeComma(e.target.value);
-                if(v) {
-                    const tsuboVal = (Math.floor((v * 0.3025) * 100) / 100).toFixed(2);
-                    document.getElementById(tsuboId).value = formatAreaWithComma(tsuboVal);
-                } else {
-                    document.getElementById(tsuboId).value = "";
-                }
+                if(v) document.getElementById(tsuboId).value = formatAreaWithComma((Math.floor((v * 0.3025) * 100) / 100).toFixed(2));
+                else document.getElementById(tsuboId).value = "";
             });}
         };
         syncArea('form-t-m2', 'form-t-tsubo'); syncArea('form-b-m2', 'form-b-tsubo'); syncArea('siire-m2', 'siire-tsubo');
 
         const autoCheckSold = () => {
-            const ds = document.getElementById('form-d-s').value.trim();
-            const ps = document.getElementById('form-p-s').value.trim();
-            if (ds !== "" || ps !== "") document.getElementById('form-is-sold').checked = true;
+            if (document.getElementById('form-d-s').value.trim() !== "" || document.getElementById('form-p-s').value.trim() !== "") document.getElementById('form-is-sold').checked = true;
         };
         document.getElementById('form-d-s').addEventListener('blur', autoCheckSold);
-        document.getElementById('form-p-s').addEventListener('blur', autoCheckSold);
-        document.getElementById('form-p-s').addEventListener('input', autoCheckSold);
+        document.getElementById('form-p-s').addEventListener('blur', autoCheckSold); document.getElementById('form-p-s').addEventListener('input', autoCheckSold);
       });
     </script>
 </body>
