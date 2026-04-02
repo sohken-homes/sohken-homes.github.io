@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.13.1</title>
+    <title>不動産管理マップ v4.13.2</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -127,15 +127,15 @@
             <div class="form-group">
                 <label>土地面積 (㎡ / 坪)</label>
                 <div class="flex-row">
-                    <input type="text" id="form-t-m2" placeholder="0.00" class="comma-input only-num flex-item"><span class="unit-label">㎡</span>
-                    <input type="text" id="form-t-tsubo" placeholder="0.00" class="comma-input flex-item" readonly><span class="unit-label">坪</span>
+                    <input type="text" id="form-t-m2" placeholder="0.00" class="comma-input area-input only-num flex-item"><span class="unit-label">㎡</span>
+                    <input type="text" id="form-t-tsubo" placeholder="0.00" class="comma-input area-input flex-item" readonly><span class="unit-label">坪</span>
                 </div>
             </div>
             <div class="form-group">
                 <label>建物面積 (㎡ / 坪)</label>
                 <div class="flex-row" style="margin-bottom:5px;">
-                    <input type="text" id="form-b-m2" placeholder="0.00" class="comma-input only-num flex-item"><span class="unit-label">㎡</span>
-                    <input type="text" id="form-b-tsubo" placeholder="0.00" class="comma-input flex-item" readonly><span class="unit-label">坪</span>
+                    <input type="text" id="form-b-m2" placeholder="0.00" class="comma-input area-input only-num flex-item"><span class="unit-label">㎡</span>
+                    <input type="text" id="form-b-tsubo" placeholder="0.00" class="comma-input area-input flex-item" readonly><span class="unit-label">坪</span>
                 </div>
                 <label>間取り</label>
                 <input type="text" id="form-layout" placeholder="4LDK">
@@ -207,8 +207,8 @@
                     <div class="flex-item"><label>購入根拠</label><select id="siire-basis"><option value="">選択</option><option value="借入額">借入額</option><option value="予想金額">予想金額</option><option value="実績値">実績値</option></select></div>
                 </div>
                 <div class="flex-row">
-                    <div class="flex-item"><label>土地面積(㎡)</label><input type="text" id="siire-m2" placeholder="0.00" class="comma-input only-num"></div>
-                    <div class="flex-item"><label>土地面積(坪)</label><input type="text" id="siire-tsubo" placeholder="0.00" class="comma-input" readonly></div>
+                    <div class="flex-item"><label>土地面積(㎡)</label><input type="text" id="siire-m2" placeholder="0.00" class="comma-input area-input only-num"></div>
+                    <div class="flex-item"><label>土地面積(坪)</label><input type="text" id="siire-tsubo" placeholder="0.00" class="comma-input area-input" readonly></div>
                 </div>
                 <div class="siire-unit-box" style="margin-top:10px;">
                     <label style="font-size:11px; color:#52c41a;">仕入坪単価：</label>
@@ -255,7 +255,6 @@
           "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
           "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png",
           "SOLD": "https://sohken-homes.github.io/sold_house.png",
-          // ★修正：Google公式の安全な赤いピン画像のURLに変更
           "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
       };
 
@@ -363,13 +362,12 @@
             });
         }
         
-        // ★修正：スプレッドシートの「日本語の列名」を「英語のキー」に正しく変換して流し込む
         currentTabs = idArray.map(id => {
             const r = allData.find(d => String(d["ID"]) === String(id));
             const data = {};
             const sheetToKey = { 
                 "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3", 
-                "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成フラグ":"is_sold", "成約フラグ":"is_sold", // ※シートによって表記揺れがあるため念のため両方対応
+                "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成フラグ":"is_sold", "成約フラグ":"is_sold", 
                 "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p", 
                 "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user", 
                 "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road", 
@@ -408,7 +406,8 @@
         saveCurrentTabData();
         const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
         baseData.id = ""; baseData.tab_name = `区画${currentTabs.length + 1}`;
-        ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold"].forEach(k => baseData[k] = "");
+        // ★ 各種日付（d_first, d_c1, d_c2, d_c3, d_s）をクリア対象に追加しました
+        ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold", "d_first", "d_c1", "d_c2", "d_c3", "d_s"].forEach(k => baseData[k] = "");
         currentTabs.push({ label: baseData.tab_name, data: baseData });
         activeTabIndex = currentTabs.length - 1; loadTabData(baseData); renderTabs();
       }
@@ -434,6 +433,8 @@
                 el.checked = !!val;
             } else if (el.classList.contains('date-input')) {
                 el.value = formatToFullDate(val);
+            } else if (el.classList.contains('area-input')) {
+                el.value = formatAreaWithComma(val);
             } else if (el.classList.contains('comma-input')) {
                 el.value = formatNumberWithComma(val);
             } else {
@@ -452,7 +453,9 @@
         const siireP = parseFloat(removeComma(document.getElementById('siire-price').value)) || 0;
         const siireM2 = parseFloat(removeComma(document.getElementById('siire-m2').value)) || 0;
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
-        document.getElementById('siire-tsubo').value = formatNumberWithComma(sTsubo.toFixed(2));
+        
+        // ★ tsubo の自動計算結果も「.00」でフォーマットしてセットします
+        document.getElementById('siire-tsubo').value = formatAreaWithComma(sTsubo);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
         document.getElementById('build-price-input').style.display = (type.includes("戸建") || type.includes("自社")) ? "block" : "none";
         if (lTsubo > 0) {
@@ -461,14 +464,27 @@
         }
       }
 
+      // 汎用のカンマ付け処理（価格など）
       function formatNumberWithComma(val) {
-          if (!val && val !== 0) return "";
+          if (!val && val !== 0 && val !== "0") return "";
           let raw = val.toString().replace(/,/g, "");
-          if (isNaN(raw)) return val;
+          if (isNaN(raw) || raw === "") return val;
           const parts = raw.split(".");
           parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
           return parts.join(".");
       }
+
+      // ★ 面積専用のカンマ付け＆小数第2位固定の処理を追加
+      function formatAreaWithComma(val) {
+          if (!val && val !== 0 && val !== "0") return "";
+          let raw = val.toString().replace(/,/g, "");
+          if (isNaN(raw) || raw === "") return val;
+          // 強制的に小数点第2位まで表示 (e.g. 100 -> 100.00)
+          let parts = Number(raw).toFixed(2).split(".");
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          return parts.join(".");
+      }
+
       function removeComma(val) { return val.toString().replace(/,/g, ""); }
       
       function formatToFullDate(val) {
@@ -676,20 +692,36 @@
         });
 
         container.addEventListener('blur', (e) => {
-            if(e.target.classList.contains('comma-input')) { e.target.value = formatNumberWithComma(e.target.value); updateAutoFields(); }
+            // ★ 入力欄のフォーカスが外れたとき、面積なら強制的に .00 を付与
+            if(e.target.classList.contains('area-input')) { 
+                e.target.value = formatAreaWithComma(e.target.value); 
+                updateAutoFields(); 
+            } else if(e.target.classList.contains('comma-input')) { 
+                e.target.value = formatNumberWithComma(e.target.value); 
+                updateAutoFields(); 
+            }
             if(e.target.classList.contains('date-input')) e.target.value = formatToFullDate(e.target.value);
         }, true);
         
         container.addEventListener('focus', (e) => {
-            if(e.target.classList.contains('comma-input')) e.target.value = removeComma(e.target.value);
+            if(e.target.classList.contains('comma-input') || e.target.classList.contains('area-input')) {
+                e.target.value = removeComma(e.target.value);
+            }
         }, true);
+        
         document.getElementById('form-type').addEventListener('change', updateAutoFields);
         
+        // ★ 自動計算される面積（坪）もフォーカスが外れたタイミングで「.00」形式に整形します
         const syncArea = (m2Id, tsuboId) => {
             const el = document.getElementById(m2Id);
             if(el) { el.addEventListener('blur', (e) => {
                 const v = removeComma(e.target.value);
-                if(v) document.getElementById(tsuboId).value = (Math.floor((v * 0.3025) * 100) / 100).toFixed(2);
+                if(v) {
+                    const tsuboVal = (Math.floor((v * 0.3025) * 100) / 100).toFixed(2);
+                    document.getElementById(tsuboId).value = formatAreaWithComma(tsuboVal);
+                } else {
+                    document.getElementById(tsuboId).value = "";
+                }
             });}
         };
         syncArea('form-t-m2', 'form-t-tsubo'); syncArea('form-b-m2', 'form-b-tsubo'); syncArea('siire-m2', 'siire-tsubo');
