@@ -120,10 +120,10 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h2>不動産管理マップ</h2>
+            <h2>創建ホームズ不動産管理マップ</h2>
             <div class="input-group">
                 <label>入力者名（漢字・かな）</label>
-                <input type="text" id="user-name" placeholder="例：山田 太郎">
+                <input type="text" id="user-name" placeholder="苗字のみ、または氏名">
             </div>
             <div class="input-group">
                 <label>共通パスワード</label>
@@ -362,7 +362,7 @@
           document.getElementById('login-screen').style.display = 'flex';
           
           const errorMsg = document.getElementById("login-error-msg");
-          errorMsg.innerText = "パスワードが変更されたか、セッションが無効です。再度ログインしてください。";
+          errorMsg.innerText = "再度ログインしてください。";
           errorMsg.style.display = "block";
       }
 
