@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.14.1</title>
+    <title>不動産管理マップ v4.16.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -43,7 +43,6 @@
         .btn-delete { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
         input[readonly] { background-color: #f9f9f9; color: #555; }
         
-        /* ファイル管理エリア用スタイル */
         #file-manager { border: 2px dashed #b7eb8f; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 12px; background: #f6ffed; transition: 0.3s; }
         #file-manager.dragover { background: #e8f0fe; border-color: #1a73e8; }
         .file-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 6px 0; }
@@ -197,14 +196,14 @@
                 <label>入力担当者</label><input type="text" id="form-user" placeholder="名前">
             </div>
 
-            <div class="section-title">物件ファイル (図面・写真など)</div>
+            <div class="section-title">物件ファイル (専用フォルダに保存)</div>
             <div id="file-manager">
                 <p style="font-size: 11px; color: #666; margin: 0 0 10px 0;">ここにファイルをドラッグ＆ドロップ<br>または<br>
                 <input type="file" id="file-input" style="display:none;" multiple>
                 <button type="button" onclick="document.getElementById('file-input').click()" style="font-size:11px; padding: 4px 8px; margin-top:5px;">ファイルを選択</button>
                 </p>
                 <div id="file-list" style="text-align: left; font-size: 12px; max-height: 150px; overflow-y: auto; background: white; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
-                    <div style='color:#999; text-align:center;'>住所を入力するとファイル一覧が表示されます</div>
+                    <div style='color:#999; text-align:center;'>ファイルはまだありません</div>
                 </div>
             </div>
 
@@ -233,7 +232,9 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbwC-63fbHWihSU4klThaNjc8j42vx3gidspuBBZssLjWnRdhDcfrdFaS7l61sQFqUrD/exec";
+      
+      // ★ ご自身のGAS URLに書き換えてください
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwIPRTuYW6GlZdrItxxo5wCJEY8vL3dno0QXfXtqYJ0hb1zSeAGJd6ATWf0NhiLpBE3/exec";
 
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
@@ -271,6 +272,13 @@
       let currentTabs = []; let activeTabIndex = 0;
       let isDragging = false; let dragLock = false; let clusterer = null; 
 
+      function generateUUID() {
+          if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
+          });
+      }
+
       async function initMap() {
         const { Map, InfoWindow } = google.maps;
         map = new Map(document.getElementById("map"), { center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID, disableDoubleClickZoom: true });
@@ -288,7 +296,6 @@
           let address = fullAddress.replace(/^日本、/, "").replace(/^〒\d{3}-\d{4}\s*/, "");
           address = address.replace(/^.{2,3}[都道府県]/, "");
           let city = "", chome = "", banchi = "";
-          
           const cityMatch = address.match(/^.*?[市区町村]/);
           if (cityMatch) { city = cityMatch[0]; address = address.replace(city, ""); }
           
@@ -310,7 +317,6 @@
           document.getElementById("form-addr2").value = chome;
           document.getElementById("form-addr3").value = banchi;
           saveCurrentTabData();
-          refreshFileList(city, chome); 
       }
 
       function fetchAddress(lat, lng) {
@@ -324,8 +330,11 @@
         const img = document.createElement("img"); img.src = ICON_MAP["DEFAULT"]; img.style.width = "32px"; img.style.cursor = "pointer";
         const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: map, gmpDraggable: true, content: img });
         currentEditingMarker = marker;
-        currentTabs = [{ label: "区画1", data: { lat: lat, lng: lng, tab_name: "区画1" } }];
+        
+        const newId = generateUUID(); 
+        currentTabs = [{ label: "区画1", data: { id: newId, lat: lat, lng: lng, tab_name: "区画1" } }];
         activeTabIndex = 0; 
+        
         marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
         marker.addListener('dragend', (e) => {
             isDragging = false; 
@@ -333,10 +342,13 @@
             fetchAddress(e.latLng.lat(), e.latLng.lng());
             setTimeout(() => { dragLock = false; }, 200);
         });
+        
         fetchAddress(lat, lng);
         loadTabData(currentTabs[0].data); renderTabs();
         document.querySelector(".panel-body").scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+        
+        refreshFileList(); 
       };
 
       window.openEdit = (ids) => {
@@ -355,7 +367,6 @@
             });
         }
         
-        // ★ 修正：ここでスプレッドシートの日本語列名を内部の英語キーへ正しく翻訳します
         currentTabs = idArray.map(id => {
             const r = allData.find(d => String(d["ID"]) === String(id));
             const data = {};
@@ -369,9 +380,7 @@
                 "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
                 "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis"
             };
-            Object.keys(sheetToKey).forEach(s => {
-                if (r[s] !== undefined) data[sheetToKey[s]] = r[s];
-            });
+            Object.keys(sheetToKey).forEach(s => { if (r[s] !== undefined) data[sheetToKey[s]] = r[s]; });
             return { label: data.tab_name || "区画1", data: data };
         });
 
@@ -380,7 +389,7 @@
         document.querySelector(".panel-body").scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
         
-        refreshFileList(currentTabs[0].data.addr1, currentTabs[0].data.addr2);
+        refreshFileList(); 
       };
 
       function renderTabs() {
@@ -428,7 +437,43 @@
         updateAutoFields();
       }
 
-      // --- ファイル管理ロジック ---
+      function buildFolderName() {
+          if(!currentTabs || currentTabs.length === 0) return "未設定物件";
+          const d0 = currentTabs[0].data;
+
+          let dateStr = "";
+          if (d0.id && allData) {
+              const row = allData.find(r => String(r["ID"]) === String(d0.id));
+              if (row && row["入力日"]) {
+                  const d = new Date(row["入力日"]);
+                  if(!isNaN(d)) dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+              }
+          }
+          if (!dateStr) {
+              const d = new Date();
+              dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+          }
+
+          let typeStr = "";
+          const types = [...new Set(currentTabs.map(t => t.data.type).filter(Boolean))];
+          if (currentTabs.length > 1 && types.length > 1) typeStr = "多棟現場";
+          else typeStr = types[0] || "種別未定";
+
+          let nameStr = d0.name || "";
+          if (!nameStr) {
+              const g = d0.gyosha || ""; const s = d0.shiten || ""; const t = d0.taiyou || "";
+              nameStr = `${g}${s}`;
+              if (t) nameStr += (nameStr ? "-" : "") + t;
+              if (!nameStr) nameStr = "名称未定";
+          }
+
+          let addrStr = (d0.addr2 || "") + (d0.addr3 || "");
+          if (!addrStr) addrStr = "住所未定";
+
+          let folderName = `${dateStr}-${typeStr}-${nameStr}-${addrStr}`;
+          return folderName.replace(/[\\/:*?"<>|]/g, '_'); 
+      }
+
       const dropZone = document.getElementById('file-manager');
       dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
       dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
@@ -436,13 +481,15 @@
       document.getElementById('file-input').addEventListener('change', (e) => handleFiles(e.target.files));
 
       function handleFiles(files) {
-          const addr1 = document.getElementById('form-addr1').value.trim();
-          const addr2 = document.getElementById('form-addr2').value.trim();
-          if (!addr1 || !addr2) { alert("市区と町名を入力してからアップロードしてください。"); return; }
-          for (let i = 0; i < files.length; i++) uploadFile(files[i], addr1, addr2);
+          saveCurrentTabData(); 
+          for (let i = 0; i < files.length; i++) uploadFile(files[i]);
       }
 
-      function uploadFile(file, addr1, addr2) {
+      function uploadFile(file) {
+          const addr1 = currentTabs[0].data.addr1 || "未設定エリア";
+          const folderName = buildFolderName();
+          const groupId = currentTabs[0].data.id;
+          
           const listEl = document.getElementById('file-list');
           listEl.innerHTML = `<div style="color:#1a73e8; text-align:center;">送信中: ${file.name}...</div>` + listEl.innerHTML;
           
@@ -451,22 +498,26 @@
               try {
                   const res = await fetch(GAS_URL, {
                       method: "POST",
-                      body: JSON.stringify({ mode: "upload_file", addr1, addr2, filename: file.name, data: e.target.result })
+                      body: JSON.stringify({ mode: "upload_file", addr1, folderName, groupId, filename: file.name, data: e.target.result })
                   });
                   const result = await res.json();
                   if (result.error) throw new Error(result.error);
-                  refreshFileList(addr1, addr2);
-              } catch (err) { alert("アップロード失敗: " + err.message); refreshFileList(addr1, addr2); }
+                  refreshFileList();
+              } catch (err) { alert("アップロード失敗: " + err.message); refreshFileList(); }
           };
           reader.readAsDataURL(file);
       }
 
-      async function refreshFileList(addr1, addr2) {
+      async function refreshFileList() {
+          saveCurrentTabData();
+          const addr1 = currentTabs[0].data.addr1 || "未設定エリア";
+          const folderName = buildFolderName();
+          const groupId = currentTabs[0].data.id;
           const listEl = document.getElementById('file-list');
-          if (!addr1 || !addr2) { listEl.innerHTML = "<div style='color:#999; text-align:center;'>住所(市区・町名)を入力するとファイル一覧が表示されます</div>"; return; }
+          
           listEl.innerHTML = "<div style='color:#666; text-align:center;'>ファイル一覧を取得中...</div>";
           try {
-              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "get_files", addr1, addr2 }) });
+              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "get_files", addr1, folderName, groupId }) });
               const result = await res.json();
               if (result.error) throw new Error(result.error);
               
@@ -479,9 +530,9 @@
                   const actions = document.createElement("div"); actions.className = "file-actions";
                   
                   const btnRen = document.createElement("button"); btnRen.innerText = "変更";
-                  btnRen.onclick = () => renameFile(f.id, f.name, addr1, addr2);
+                  btnRen.onclick = () => renameFile(f.id, f.name);
                   const btnDel = document.createElement("button"); btnDel.innerText = "削除"; btnDel.className = "del";
-                  btnDel.onclick = () => deleteFile(f.id, addr1, addr2);
+                  btnDel.onclick = () => deleteFile(f.id);
                   
                   actions.appendChild(btnRen); actions.appendChild(btnDel);
                   row.appendChild(link); row.appendChild(actions); listEl.appendChild(row);
@@ -489,7 +540,7 @@
           } catch (err) { listEl.innerHTML = `<div style='color:red; text-align:center;'>取得失敗: ${err.message}</div>`; }
       }
 
-      async function renameFile(id, oldName, addr1, addr2) {
+      async function renameFile(id, oldName) {
           const newName = prompt("新しいファイル名を入力してください", oldName);
           if (!newName || newName === oldName) return;
           try {
@@ -497,21 +548,20 @@
               const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "rename_file", fileId: id, newName: newName }) });
               const result = await res.json();
               if (result.error) throw new Error(result.error);
-              refreshFileList(addr1, addr2);
-          } catch(err) { alert("名前変更失敗: " + err.message); refreshFileList(addr1, addr2); }
+              refreshFileList();
+          } catch(err) { alert("名前変更失敗: " + err.message); refreshFileList(); }
       }
 
-      async function deleteFile(id, addr1, addr2) {
+      async function deleteFile(id) {
           if (!confirm("本当にこのファイルを削除しますか？\n(Googleドライブのゴミ箱に移動します)")) return;
           try {
               document.getElementById('file-list').innerHTML = "<div style='color:#666; text-align:center;'>削除中...</div>";
               const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "delete_file", fileId: id }) });
               const result = await res.json();
               if (result.error) throw new Error(result.error);
-              refreshFileList(addr1, addr2);
-          } catch(err) { alert("削除失敗: " + err.message); refreshFileList(addr1, addr2); }
+              refreshFileList();
+          } catch(err) { alert("削除失敗: " + err.message); refreshFileList(); }
       }
-      // ------------------------------------------------------------
 
       function updateAutoFields() {
         const type = document.getElementById('form-type').value;
@@ -563,7 +613,15 @@
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         try {
-            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "save_multiple", data: currentTabs.map(t => t.data) }) });
+            // ★ 新規追加：GASにフォルダ名を渡して保存
+            const fName = buildFolderName();
+            const payload = currentTabs.map(t => {
+                const dataCopy = { ...t.data };
+                dataCopy.folderName = fName;
+                return dataCopy;
+            });
+
+            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "save_multiple", data: payload }) });
             const result = await res.json();
             if(result.error) throw new Error(result.error);
             await fetchMapData(); sharedInfoWindow.close(); closePanel();
@@ -660,12 +718,6 @@
             if(e.target.classList.contains('area-input')) { e.target.value = formatAreaWithComma(e.target.value); updateAutoFields(); } 
             else if(e.target.classList.contains('comma-input')) { e.target.value = formatNumberWithComma(e.target.value); updateAutoFields(); }
             if(e.target.classList.contains('date-input')) e.target.value = formatToFullDate(e.target.value);
-            
-            if(e.target.id === 'form-addr1' || e.target.id === 'form-addr2') {
-                const a1 = document.getElementById('form-addr1').value.trim();
-                const a2 = document.getElementById('form-addr2').value.trim();
-                refreshFileList(a1, a2);
-            }
         }, true);
         container.addEventListener('focus', (e) => {
             if(e.target.classList.contains('comma-input') || e.target.classList.contains('area-input')) e.target.value = removeComma(e.target.value);
