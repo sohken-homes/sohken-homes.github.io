@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.19.0</title>
+    <title>不動産管理マップ v4.20.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: "Hiragino Sans", "Meiryo", sans-serif; background: #f0f2f5; }
         #map { height: 100vh; width: 100%; }
         
-        /* ★ 検索ボックスを少し下げて航空写真ボタン等との重なりを防止 */
         #search-box-container { position: absolute; top: 70px; left: 10px; z-index: 5; display: flex; gap: 5px; align-items: center; }
         #address-input { width: 180px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
         #search-btn { padding: 10px 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: bold; }
         
-        /* ★ 新設：レイヤ（絞り込み）パネル */
+        /* レイヤ（絞り込み）パネル */
         #filter-panel { position: absolute; top: 125px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
         .filter-item { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #333; }
         .filter-item input { cursor: pointer; }
 
-        /* パネル共通スタイル（★下部の余白を広げてペグマンとの重なりを防止） */
+        /* パネル共通スタイル */
         .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: calc(100vh - 140px); overflow: hidden; flex-direction: column; }
         .panel-header { padding: 15px 20px 10px 20px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
         .panel-header h3 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -55,14 +54,14 @@
         .btn-drive-link { display: block; background: #e6f4ea; color: #137333; text-align: center; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; border: 1px solid #ceead6; font-size: 14px; margin-top: 5px; }
         .btn-drive-link:hover { background: #d3eadd; }
 
-        /* --- 編集パネル専用スタイル (薄いオレンジベース) --- */
-        #editor-panel { background: #fff3e0; }
-        #editor-panel .panel-header { background: #fff3e0; }
-        #editor-panel .panel-header h3 { color: #e65100; }
-        #editor-panel .tab-container { background: #ffe0b2; border-bottom: 1px solid #ffcc80; }
-        #editor-panel .tab.active { background: #fffaf0; border-color: #ffcc80; color: #e65100; }
-        #editor-panel .panel-body { background: #fffaf0; }
-        #editor-panel .section-title { background: #ffe0b2; color: #e65100; }
+        /* --- ★修正：編集パネル専用スタイル (薄いブルーベース) --- */
+        #editor-panel { background: #e3f2fd; } 
+        #editor-panel .panel-header { background: #e3f2fd; }
+        #editor-panel .panel-header h3 { color: #1565c0; } 
+        #editor-panel .tab-container { background: #bbdefb; border-bottom: 1px solid #90caf9; }
+        #editor-panel .tab.active { background: #ffffff; border-color: #90caf9; color: #1565c0; }
+        #editor-panel .panel-body { background: #ffffff; }
+        #editor-panel .section-title { background: #bbdefb; color: #1565c0; }
         
         .drag-notice { font-size: 10px; color: #e67e22; margin-top: 4px; font-weight: bold; }
         .form-group { margin-bottom: 12px; }
@@ -76,7 +75,7 @@
         #unit-price-container { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #ffe58f; margin-top: 10px; }
         .price-display { font-size: 16px; font-weight: bold; color: #d93025; }
         .siire-unit-box { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 8px; text-align: center; }
-        .btn-save { background: #e65100; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
+        .btn-save { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 8px; }
         .btn-delete { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
         input[readonly] { background-color: #f9f9f9; color: #555; }
@@ -106,11 +105,15 @@
     </div>
 
     <div id="filter-panel">
-        <div style="color:#1a73e8; font-weight:bold; margin-bottom:2px; font-size:12px;">■ 表示レイヤ</div>
+        <div style="color:#1a73e8; font-weight:bold; margin-bottom:4px; font-size:12px;">■ 表示レイヤ</div>
+        <label class="filter-item" style="font-weight:bold; border-bottom:1px solid #ccc; padding-bottom:6px; margin-bottom:4px;">
+            <input type="checkbox" id="layer-all" checked> 全て表示
+        </label>
         <label class="filter-item"><input type="checkbox" class="layer-cb" value="新築戸建" checked> 新築戸建</label>
         <label class="filter-item"><input type="checkbox" class="layer-cb" value="中古戸建" checked> 中古戸建</label>
         <label class="filter-item"><input type="checkbox" class="layer-cb" value="売地" checked> 売地</label>
-        <label class="filter-item"><input type="checkbox" class="layer-cb" value="自社" checked> 自社物件 (全)</label>
+        <label class="filter-item"><input type="checkbox" class="layer-cb" value="自社物件" checked> 自社物件</label>
+        <label class="filter-item"><input type="checkbox" class="layer-cb" value="自社（情開）" checked> 自社（情開）</label>
         <label class="filter-item"><input type="checkbox" class="layer-cb" value="MS" checked> マンション (全)</label>
         <label class="filter-item"><input type="checkbox" class="layer-cb" value="査定" checked> 査定依頼</label>
         <hr style="width:100%; margin:2px 0; border:none; border-top:1px solid #ddd;">
@@ -135,7 +138,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h3>✏️ 物件登録・編集</h3>
                 <div>
-                    <button class="btn-switch-edit" onclick="switchToView()" style="color:#e65100; border-color:#e65100;">👁️ 閲覧モード</button>
+                    <button class="btn-switch-edit" onclick="switchToView()" style="color:#1565c0; border-color:#1565c0;">👁️ 閲覧モード</button>
                     <button class="btn-close-view" onclick="closePanel()">✖</button>
                 </div>
             </div>
@@ -357,15 +360,10 @@
             zoom: 14, 
             mapId: MAP_ID, 
             disableDoubleClickZoom: true,
-            // ★ マップ（衛星写真）切り替えボタンを有効化
             mapTypeControl: true,
-            mapTypeControlOptions: {
-                position: google.maps.ControlPosition.TOP_LEFT
-            },
+            mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_LEFT },
             streetViewControl: true,
-            streetViewControlOptions: {
-                position: google.maps.ControlPosition.BOTTOM_RIGHT
-            }
+            streetViewControlOptions: { position: google.maps.ControlPosition.BOTTOM_RIGHT }
         });
         geocoder = new google.maps.Geocoder();
         
@@ -375,12 +373,11 @@
         });
         map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
         
-        // ★ ストリートビューが起動した時にカスタムUIを隠して重なりを防止
         map.getStreetView().addListener("visible_changed", () => {
             const isSV = map.getStreetView().getVisible();
             document.getElementById("search-box-container").style.display = isSV ? "none" : "flex";
             document.getElementById("filter-panel").style.display = isSV ? "none" : "flex";
-            if (isSV) closePanel(); // ペグマン起動時は右パネルも閉じる
+            if (isSV) closePanel();
         });
 
         fetchMapData();
@@ -534,14 +531,25 @@
           });
       }
 
+      // ★ バグ修正：undefined や null が入っても絶対にエラーにならない安全な関数
       const formatAreaStrict = (v) => {
-          if(!v && v!==0 && v!=="0") return "";
+          if(v == null || (!v && v!==0 && v!=="0")) return "";
           let n = parseFloat(v.toString().replace(/,/g, ""));
           if(isNaN(n)) return "";
           let p = n.toFixed(2).split(".");
           p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
           return p.join(".");
       };
+      function removeComma(val) {
+          if(val == null) return ""; 
+          return val.toString().replace(/,/g, ""); 
+      }
+      function formatNumberWithComma(val) {
+          if (val == null || (!val && val !== 0 && val !== "0")) return ""; 
+          let raw = val.toString().replace(/,/g, "");
+          if (isNaN(raw) || raw === "") return val;
+          const parts = raw.split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
+      }
 
       function loadViewData(data) {
           const container = document.getElementById("view-container");
@@ -832,13 +840,6 @@
         }
       }
 
-      function formatNumberWithComma(val) {
-          if (!val && val !== 0 && val !== "0") return ""; let raw = val.toString().replace(/,/g, "");
-          if (isNaN(raw) || raw === "") return val;
-          const parts = raw.split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
-      }
-      function removeComma(val) { return val.toString().replace(/,/g, ""); }
-      
       function formatToFullDate(val) {
           if (!val) return ""; let input = val.toString().trim();
           if (input.includes('T') && input.includes('Z')) {
@@ -904,19 +905,17 @@
         } catch (e) { alert("通信エラーが発生しました。GASのURLが正しいか確認してください。"); }
       }
 
-      // ★ レイヤ（絞り込み）判定を追加したマーカー描画ロジック
       function renderMarkers() {
         if (clusterer) clusterer.clearMarkers();
         markersList.forEach(m => m.map = null); markersList = [];
         
-        // チェックされているフィルターの取得
+        // ★修正：自社（情開）の分類に対応した絞り込みロジック
         const activeFilters = Array.from(document.querySelectorAll('.layer-cb:checked')).map(cb => cb.value);
 
         const groups = {};
         allData.forEach(row => {
             if (!row["緯度"] || !row["経度"]) return;
             
-            // フィルター判定
             let isVisible = false;
             const isSold = (row["成約フラグ"] === true || row["成約フラグ"] === "TRUE");
             
@@ -924,16 +923,28 @@
                 isVisible = activeFilters.includes("SOLD");
             } else {
                 const t = row["物件種別"] || "";
-                if (t.includes("自社")) isVisible = activeFilters.includes("自社");
-                else if (t.includes("MS")) isVisible = activeFilters.includes("MS");
-                else if (t.includes("査定")) isVisible = activeFilters.includes("査定");
-                else if (t === "新築戸建") isVisible = activeFilters.includes("新築戸建");
-                else if (t === "中古戸建") isVisible = activeFilters.includes("中古戸建");
-                else if (t === "売地") isVisible = activeFilters.includes("売地");
-                else isVisible = true; // 種別未定などはとりあえず表示
+                
+                // 完全一致の判定ルール
+                if (t.includes("情開")) {
+                    isVisible = activeFilters.includes("自社（情開）");
+                } else if (t.includes("自社")) {
+                    isVisible = activeFilters.includes("自社物件");
+                } else if (t.includes("MS")) {
+                    isVisible = activeFilters.includes("MS");
+                } else if (t.includes("査定")) {
+                    isVisible = activeFilters.includes("査定");
+                } else if (t === "新築戸建") {
+                    isVisible = activeFilters.includes("新築戸建");
+                } else if (t === "中古戸建") {
+                    isVisible = activeFilters.includes("中古戸建");
+                } else if (t === "売地") {
+                    isVisible = activeFilters.includes("売地");
+                } else {
+                    isVisible = true; // 種別未入力は迷子防止のため常に表示
+                }
             }
 
-            if (!isVisible) return; // 条件に合わなければスキップして描画しない
+            if (!isVisible) return;
 
             const key = `${Number(row["緯度"]).toFixed(6)}_${Number(row["経度"]).toFixed(6)}`;
             if (!groups[key]) groups[key] = []; 
@@ -975,9 +986,20 @@
       }
 
       window.addEventListener('load', () => {
-        // ★ レイヤチェックボックスのイベント紐付け（チェックするたびに地図を描画し直す）
+        // ★追加：レイヤ「全て」チェックボックスの動作
+        document.getElementById('layer-all').addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('.layer-cb').forEach(cb => { cb.checked = isChecked; });
+            renderMarkers();
+        });
+
         document.querySelectorAll('.layer-cb').forEach(cb => {
-            cb.addEventListener('change', renderMarkers);
+            cb.addEventListener('change', () => {
+                const allCb = document.querySelectorAll('.layer-cb');
+                const checkedCb = document.querySelectorAll('.layer-cb:checked');
+                document.getElementById('layer-all').checked = (allCb.length === checkedCb.length);
+                renderMarkers();
+            });
         });
 
         const container = document.getElementById("form-container");
