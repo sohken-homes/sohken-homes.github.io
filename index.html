@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.14.0</title>
+    <title>不動産管理マップ v4.14.1</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -93,17 +93,6 @@
                     <div class="flex-item"><input type="text" id="form-addr1" placeholder="市区"></div>
                     <div class="flex-item"><input type="text" id="form-addr2" placeholder="町名"></div>
                     <div class="flex-item"><input type="text" id="form-addr3" placeholder="以降"></div>
-                </div>
-            </div>
-
-            <div class="section-title">物件ファイル (図面・写真など)</div>
-            <div id="file-manager">
-                <p style="font-size: 11px; color: #666; margin: 0 0 10px 0;">ここにファイルをドラッグ＆ドロップ<br>または<br>
-                <input type="file" id="file-input" style="display:none;" multiple>
-                <button type="button" onclick="document.getElementById('file-input').click()" style="font-size:11px; padding: 4px 8px; margin-top:5px;">ファイルを選択</button>
-                </p>
-                <div id="file-list" style="text-align: left; font-size: 12px; max-height: 150px; overflow-y: auto; background: white; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
-                    <div style='color:#999; text-align:center;'>住所を入力するとファイル一覧が表示されます</div>
                 </div>
             </div>
 
@@ -208,6 +197,17 @@
                 <label>入力担当者</label><input type="text" id="form-user" placeholder="名前">
             </div>
 
+            <div class="section-title">物件ファイル (図面・写真など)</div>
+            <div id="file-manager">
+                <p style="font-size: 11px; color: #666; margin: 0 0 10px 0;">ここにファイルをドラッグ＆ドロップ<br>または<br>
+                <input type="file" id="file-input" style="display:none;" multiple>
+                <button type="button" onclick="document.getElementById('file-input').click()" style="font-size:11px; padding: 4px 8px; margin-top:5px;">ファイルを選択</button>
+                </p>
+                <div id="file-list" style="text-align: left; font-size: 12px; max-height: 150px; overflow-y: auto; background: white; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
+                    <div style='color:#999; text-align:center;'>住所を入力するとファイル一覧が表示されます</div>
+                </div>
+            </div>
+
             <div class="section-title">仕入分析</div>
             <div class="form-group">
                 <div class="flex-row" style="margin-bottom:8px;">
@@ -233,8 +233,6 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      
-      // ★ 新しく発行したURLをここに貼ってください
       const GAS_URL = "https://script.google.com/macros/s/AKfycbwC-63fbHWihSU4klThaNjc8j42vx3gidspuBBZssLjWnRdhDcfrdFaS7l61sQFqUrD/exec";
 
       const FORM_MAP = {
@@ -294,12 +292,11 @@
           const cityMatch = address.match(/^.*?[市区町村]/);
           if (cityMatch) { city = cityMatch[0]; address = address.replace(city, ""); }
           
-          // ★ 丁目を除外し「町名」のみにする賢いロジック
           if (address.includes("丁目")) {
               const idx = address.indexOf("丁目"); 
-              let rawChome = address.substring(0, idx); // 例：阿佐谷南1
-              chome = rawChome.replace(/[0-9０-９]+$/, ''); // 数字を削除 -> 阿佐谷南
-              banchi = address.substring(address.indexOf(chome) + chome.length).trim(); // -> 1丁目2-3
+              let rawChome = address.substring(0, idx);
+              chome = rawChome.replace(/[0-9０-９]+$/, '');
+              banchi = address.substring(address.indexOf(chome) + chome.length).trim();
           } else {
               const numMatch = address.match(/[0-9０-９]/);
               if (numMatch) {
@@ -313,7 +310,7 @@
           document.getElementById("form-addr2").value = chome;
           document.getElementById("form-addr3").value = banchi;
           saveCurrentTabData();
-          refreshFileList(city, chome); // 住所が入ったらファイルリスト更新
+          refreshFileList(city, chome); 
       }
 
       function fetchAddress(lat, lng) {
@@ -358,10 +355,23 @@
             });
         }
         
+        // ★ 修正：ここでスプレッドシートの日本語列名を内部の英語キーへ正しく翻訳します
         currentTabs = idArray.map(id => {
             const r = allData.find(d => String(d["ID"]) === String(id));
             const data = {};
-            Object.keys(FORM_MAP).forEach(idKey => { data[FORM_MAP[idKey]] = r[FORM_MAP[idKey]] !== undefined ? r[FORM_MAP[idKey]] : ""; });
+            const sheetToKey = {
+                "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
+                "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成約フラグ":"is_sold", "成フラグ":"is_sold",
+                "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p",
+                "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
+                "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road",
+                "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
+                "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
+                "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis"
+            };
+            Object.keys(sheetToKey).forEach(s => {
+                if (r[s] !== undefined) data[sheetToKey[s]] = r[s];
+            });
             return { label: data.tab_name || "区画1", data: data };
         });
 
@@ -370,7 +380,6 @@
         document.querySelector(".panel-body").scrollTop = 0;
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
         
-        // ファイルリストの読み込み
         refreshFileList(currentTabs[0].data.addr1, currentTabs[0].data.addr2);
       };
 
@@ -419,7 +428,7 @@
         updateAutoFields();
       }
 
-      // --- ファイル管理（D&D、取得、アップロード、削除）のロジック ---
+      // --- ファイル管理ロジック ---
       const dropZone = document.getElementById('file-manager');
       dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
       dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
@@ -652,7 +661,6 @@
             else if(e.target.classList.contains('comma-input')) { e.target.value = formatNumberWithComma(e.target.value); updateAutoFields(); }
             if(e.target.classList.contains('date-input')) e.target.value = formatToFullDate(e.target.value);
             
-            // ★住所(市区・町名)からフォーカスが外れたら、自動でファイル一覧を更新
             if(e.target.id === 'form-addr1' || e.target.id === 'form-addr2') {
                 const a1 = document.getElementById('form-addr1').value.trim();
                 const a2 = document.getElementById('form-addr2').value.trim();
