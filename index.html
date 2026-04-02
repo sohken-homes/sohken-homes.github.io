@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.24.0</title>
+    <title>不動産管理マップ v4.25.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -92,7 +92,6 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
         }
         
-        /* ★追加：保存中の画面ロック用オーバーレイ */
         #saving-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(255, 255, 255, 0.7); z-index: 9999;
@@ -332,6 +331,7 @@
           "siire-price":"siire_p", "siire-m2":"siire_m2", "siire-basis":"siire_basis"
       };
 
+      // ★修正：漏れていたアイコン5種を完全網羅
       const ICON_MAP = {
           "新築戸建": "https://sohken-homes.github.io/icon_new_house.png",
           "中古戸建": "https://sohken-homes.github.io/icon_used_house.png",
@@ -339,9 +339,14 @@
           "自社新築": "https://sohken-homes.github.io/icon_jisha_new.png", 
           "自社中古": "https://sohken-homes.github.io/icon_jisha_used.png",
           "自社売地": "https://sohken-homes.github.io/icon_jisha_land.png",
+          "自社新築(情開)": "https://sohken-homes.github.io/icon_jisha_new_info.png",
+          "自社中古(情開)": "https://sohken-homes.github.io/icon_jisha_used_info.png",
+          "自社売地(情開)": "https://sohken-homes.github.io/icon_jisha_land_info.png",
+          "自社中古MS(情開)": "https://sohken-homes.github.io/icon_jisha_ms_info.png",
           "新築MS": "https://sohken-homes.github.io/icon_new_ms.png",
           "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
           "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png",
+          "査定依頼MS": "https://sohken-homes.github.io/icon_satei_ms.png",
           "SOLD": "https://sohken-homes.github.io/sold_house.png",
           "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
       };
@@ -353,7 +358,7 @@
       let map, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
       let isDragging = false; let dragLock = false; let clusterer = null; 
-      let isSaving = false; // ★追加：保存中のロック用フラグ
+      let isSaving = false;
 
       function generateUUID() {
           if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -377,11 +382,11 @@
         geocoder = new google.maps.Geocoder();
         
         map.addListener("click", (e) => { 
-            if(dragLock || isDragging || isSaving) return; // ★保存中は閉じられないようにガード
+            if(dragLock || isDragging || isSaving) return;
             closePanel(); 
         });
         map.addListener("dblclick", (e) => {
-            if(isSaving) return; // ★ガード
+            if(isSaving) return;
             addNewProperty(e.latLng.lat(), e.latLng.lng());
         });
         
@@ -458,8 +463,10 @@
         
         fetchAddress(lat, lng);
         loadTabData(currentTabs[0].data); renderTabs();
-        document.querySelector("#form-container").scrollTop = 0;
+        
+        // ★修正：パネルを見える状態にしてから一番上へスクロールさせる
         document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+        document.getElementById("form-container").scrollTop = 0; 
         refreshFileList(); 
       };
 
@@ -491,8 +498,10 @@
           activeTabIndex = 0;
           renderViewTabs();
           loadViewData(currentTabs[0].data);
-          document.querySelector("#view-container").scrollTop = 0;
+          
+          // ★修正：パネルを見える状態にしてから一番上へスクロールさせる
           document.getElementById("view-panel").style.setProperty("display", "flex", "important");
+          document.getElementById("view-container").scrollTop = 0;
       };
 
       window.switchToEdit = () => {
@@ -509,12 +518,15 @@
           }
           loadTabData(currentTabs[activeTabIndex].data); 
           renderTabs();
+          
+          // ★修正：パネルを見える状態にしてから一番上へスクロールさせる
           document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+          document.getElementById("form-container").scrollTop = 0;
           refreshFileList();
       };
 
       window.switchToView = () => {
-          if(isSaving) return; // ★ガード
+          if(isSaving) return;
           if (!currentTabs[0].data.drive_url && !currentTabs[0].data.name && !currentTabs[0].data.p_first) {
              closePanel(); return; 
           }
@@ -524,7 +536,7 @@
       };
 
       window.closePanel = () => { 
-          if(isSaving) return; // ★ガード
+          if(isSaving) return;
           if(currentEditingMarker) {
               if(!currentEditingMarker.rowIds) currentEditingMarker.map = null; 
               else if(currentEditingMarker.content) currentEditingMarker.content.classList.remove('active-marker');
@@ -540,7 +552,14 @@
           currentTabs.forEach((tab, index) => {
               const el = document.createElement("div");
               el.className = `tab ${index === activeTabIndex ? 'active' : ''}`; el.innerText = tab.label || `区画${index + 1}`;
-              el.onclick = (e) => { e.stopPropagation(); activeTabIndex = index; loadViewData(currentTabs[index].data); renderViewTabs(); }; 
+              el.onclick = (e) => { 
+                  e.stopPropagation(); 
+                  activeTabIndex = index; 
+                  loadViewData(currentTabs[index].data); 
+                  renderViewTabs(); 
+                  // ★タブ切替時にもスクロールを一番上へ
+                  document.getElementById("view-container").scrollTop = 0;
+              }; 
               bar.appendChild(el);
           });
       }
@@ -669,13 +688,24 @@
         currentTabs.forEach((tab, index) => {
             const el = document.createElement("div");
             el.className = `tab ${index === activeTabIndex ? 'active' : ''}`; el.innerText = tab.label || `区画${index + 1}`;
-            el.onclick = (e) => { e.stopPropagation(); switchTab(index); }; bar.appendChild(el);
+            el.onclick = (e) => { 
+                e.stopPropagation(); 
+                switchTab(index); 
+            }; 
+            bar.appendChild(el);
         });
         const addBtn = document.createElement("div"); addBtn.className = "tab tab-add"; addBtn.innerText = "＋追加";
         addBtn.onclick = (e) => { e.stopPropagation(); addTab(); }; bar.appendChild(addBtn);
       }
 
-      function switchTab(index) { saveCurrentTabData(); activeTabIndex = index; loadTabData(currentTabs[index].data); renderTabs(); }
+      function switchTab(index) { 
+          saveCurrentTabData(); 
+          activeTabIndex = index; 
+          loadTabData(currentTabs[index].data); 
+          renderTabs(); 
+          // ★タブ切替時にもスクロールを一番上へ
+          document.getElementById("form-container").scrollTop = 0;
+      }
 
       function addTab() {
         saveCurrentTabData();
@@ -873,7 +903,6 @@
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         
-        // ★ロックON
         isSaving = true;
         document.getElementById("saving-overlay").style.display = "flex";
 
@@ -882,7 +911,6 @@
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
                 dataCopy.folderName = fName;
-                // ★追加：GoogleマップURLをここで生成して送信
                 dataCopy.map_url = `https://www.google.com/maps?q=${dataCopy.lat},${dataCopy.lng}`;
                 return dataCopy;
             });
@@ -895,7 +923,6 @@
         } catch (e) { 
             alert("保存失敗: " + e.message); 
         } finally {
-            // ★処理が終わったらロックを解除してボタンを戻す
             isSaving = false;
             document.getElementById("saving-overlay").style.display = "none";
             btn.disabled = false; btn.innerText = "保存して閉じる"; 
@@ -911,7 +938,6 @@
           });
       };
 
-      // ★フォルダ削除フローの刷新と、ロック機能の適用
       window.deleteProperty = async () => {
           if(!confirm("この区画/タブを削除しますか？")) return;
 
@@ -926,7 +952,6 @@
 
           const btn = document.getElementById("delete-btn"); btn.innerText = "削除中..."; btn.disabled = true;
           
-          // ★ロックON
           isSaving = true;
           document.getElementById("saving-overlay").style.display = "flex";
 
@@ -936,7 +961,7 @@
                   body: JSON.stringify({
                       id: document.getElementById("form-id").value, 
                       mode: "delete",
-                      trashFolder: shouldTrashFolder // booleanでフラグだけを送る
+                      trashFolder: shouldTrashFolder 
                   }) 
               });
               const result = await res.json();
@@ -945,7 +970,6 @@
           } catch (e) { 
               alert("削除失敗: " + e.message); 
           } finally {
-              // ★ロック解除
               isSaving = false;
               document.getElementById("saving-overlay").style.display = "none";
               btn.disabled = false; btn.innerText = "この区画を削除する"; 
