@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.23.0</title>
+    <title>不動産管理マップ v4.24.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -91,9 +91,22 @@
             70% { box-shadow: 0 0 0 15px rgba(255, 152, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
         }
+        
+        /* ★追加：保存中の画面ロック用オーバーレイ */
+        #saving-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(255, 255, 255, 0.7); z-index: 9999;
+            justify-content: center; align-items: center; flex-direction: column;
+            font-size: 20px; font-weight: bold; color: #1a73e8; cursor: wait;
+        }
     </style>
 </head>
 <body>
+
+    <div id="saving-overlay">
+        <div>⏳ 処理中です。しばらくお待ちください...</div>
+        <div style="font-size:12px; color:#666; margin-top:10px; font-weight:normal;">※このまま画面を閉じないでください</div>
+    </div>
 
     <div id="search-box-container">
         <input type="text" id="address-input" placeholder="住所で新規登録" onkeydown="if(event.key==='Enter')executeSearch()">
@@ -125,8 +138,7 @@
             </div>
         </div>
         <div class="tab-container" id="view-tab-bar"></div>
-        <div class="panel-body" id="view-container">
-            </div>
+        <div class="panel-body" id="view-container"></div>
     </div>
 
     <div id="editor-panel" class="side-panel">
@@ -304,7 +316,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbwsRZ_HdQmz1hjENYKoU3ULVwfj_iHjwV-CU1_FeYCOsRnReSr7p31M48KJzfe7QZC8/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbw560kKXUBq8vYaPWjH6LqIezX3T7zIaaRh52djpXI8AUbgWbfcPxwB2CeZN-y6f5Xa/exec";
 
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
@@ -341,6 +353,7 @@
       let map, geocoder, allData = [], currentEditingMarker = null, markersList = [];
       let currentTabs = []; let activeTabIndex = 0;
       let isDragging = false; let dragLock = false; let clusterer = null; 
+      let isSaving = false; // ★追加：保存中のロック用フラグ
 
       function generateUUID() {
           if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -364,17 +377,19 @@
         geocoder = new google.maps.Geocoder();
         
         map.addListener("click", (e) => { 
-            if(dragLock || isDragging) return;
+            if(dragLock || isDragging || isSaving) return; // ★保存中は閉じられないようにガード
             closePanel(); 
         });
-        // マップ上のダブルクリックは「新規登録」
-        map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
+        map.addListener("dblclick", (e) => {
+            if(isSaving) return; // ★ガード
+            addNewProperty(e.latLng.lat(), e.latLng.lng());
+        });
         
         map.getStreetView().addListener("visible_changed", () => {
             const isSV = map.getStreetView().getVisible();
             document.getElementById("search-box-container").style.display = isSV ? "none" : "flex";
             document.getElementById("filter-panel").style.display = isSV ? "none" : "flex";
-            if (isSV) closePanel();
+            if (isSV && !isSaving) closePanel();
         });
 
         fetchMapData();
@@ -462,7 +477,7 @@
                   "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
                   "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
                   "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis",
-                  "ドライブURL":"drive_url"
+                  "ドライブURL":"drive_url", "マップURL":"map_url"
               };
               Object.keys(sheetToKey).forEach(s => { if (r[s] !== undefined) data[sheetToKey[s]] = r[s]; });
               return { label: data.tab_name || "区画1", data: data };
@@ -499,6 +514,7 @@
       };
 
       window.switchToView = () => {
+          if(isSaving) return; // ★ガード
           if (!currentTabs[0].data.drive_url && !currentTabs[0].data.name && !currentTabs[0].data.p_first) {
              closePanel(); return; 
           }
@@ -508,6 +524,7 @@
       };
 
       window.closePanel = () => { 
+          if(isSaving) return; // ★ガード
           if(currentEditingMarker) {
               if(!currentEditingMarker.rowIds) currentEditingMarker.map = null; 
               else if(currentEditingMarker.content) currentEditingMarker.content.classList.remove('active-marker');
@@ -741,7 +758,7 @@
       }
 
       function uploadFile(file) {
-          const addr1 = currentTabs[0].data.addr1 || "未設定エリア";
+          const addr1 = currentTabs[0].data.addr1 || "不明な地域";
           const folderName = buildFolderName();
           const groupId = currentTabs[0].data.id;
           
@@ -765,7 +782,7 @@
 
       async function refreshFileList() {
           saveCurrentTabData();
-          const addr1 = currentTabs[0].data.addr1 || "未設定エリア";
+          const addr1 = currentTabs[0].data.addr1 || "不明な地域";
           const folderName = buildFolderName();
           const groupId = currentTabs[0].data.id;
           const listEl = document.getElementById('file-list');
@@ -855,11 +872,18 @@
       window.submitForm = async () => {
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
+        
+        // ★ロックON
+        isSaving = true;
+        document.getElementById("saving-overlay").style.display = "flex";
+
         try {
             const fName = buildFolderName();
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
                 dataCopy.folderName = fName;
+                // ★追加：GoogleマップURLをここで生成して送信
+                dataCopy.map_url = `https://www.google.com/maps?q=${dataCopy.lat},${dataCopy.lng}`;
                 return dataCopy;
             });
 
@@ -868,8 +892,14 @@
             if(result.error) throw new Error(result.error);
             await fetchMapData(); 
             switchToView();
+        } catch (e) { 
+            alert("保存失敗: " + e.message); 
+        } finally {
+            // ★処理が終わったらロックを解除してボタンを戻す
+            isSaving = false;
+            document.getElementById("saving-overlay").style.display = "none";
             btn.disabled = false; btn.innerText = "保存して閉じる"; 
-        } catch (e) { alert("保存失敗: " + e.message); btn.disabled = false; btn.innerText = "保存して閉じる"; }
+        }
       };
 
       window.executeSearch = () => {
@@ -881,38 +911,45 @@
           });
       };
 
-      // ★新設：シンプルな削除フロー（フォルダIDを確実に見つけて送信する）
+      // ★フォルダ削除フローの刷新と、ロック機能の適用
       window.deleteProperty = async () => {
           if(!confirm("この区画/タブを削除しますか？")) return;
 
-          let folderIdToDelete = null;
-          const driveUrl = currentTabs[activeTabIndex].data.drive_url; // スプレッドシートから読み込んだ確実なURL
+          let shouldTrashFolder = false;
+          const driveUrl = currentTabs[activeTabIndex].data.drive_url; 
           
           if (driveUrl) {
               if (confirm("【確認】\nGoogleドライブ上の関連ファイル(フォルダ)もゴミ箱に移動しますか？\n\n※他の区画とこのフォルダを共有している場合は「キャンセル」を選んでください。")) {
-                  // URLから「フォルダID」だけを抽出する
-                  const match = driveUrl.match(/folders\/([a-zA-Z0-9-_]+)/);
-                  if (match) {
-                      folderIdToDelete = match[1];
-                  }
+                  shouldTrashFolder = true;
               }
           }
 
           const btn = document.getElementById("delete-btn"); btn.innerText = "削除中..."; btn.disabled = true;
+          
+          // ★ロックON
+          isSaving = true;
+          document.getElementById("saving-overlay").style.display = "flex";
+
           try {
               const res = await fetch(GAS_URL, { 
                   method: "POST", 
                   body: JSON.stringify({
                       id: document.getElementById("form-id").value, 
                       mode: "delete",
-                      folderId: folderIdToDelete // GASに確実なフォルダIDを送る
+                      trashFolder: shouldTrashFolder // booleanでフラグだけを送る
                   }) 
               });
               const result = await res.json();
               if(result.error) throw new Error(result.error);
               await fetchMapData(); closePanel();
+          } catch (e) { 
+              alert("削除失敗: " + e.message); 
+          } finally {
+              // ★ロック解除
+              isSaving = false;
+              document.getElementById("saving-overlay").style.display = "none";
               btn.disabled = false; btn.innerText = "この区画を削除する"; 
-          } catch (e) { alert("削除失敗: " + e.message); btn.disabled = false; btn.innerText = "この区画を削除する"; }
+          }
       };
 
       async function fetchMapData() {
@@ -989,17 +1026,15 @@
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: div });
             marker.rowIds = ids;
             
-            // ★ シングルクリックは閲覧パネル
             div.addEventListener("click", (e) => {
                 e.stopPropagation(); 
-                openView(marker.rowIds, marker);
+                if(!isSaving) openView(marker.rowIds, marker);
             });
 
-            // ★ ダブルクリックで直接編集パネルへジャンプ
             div.addEventListener("dblclick", (e) => {
                 e.stopPropagation(); 
+                if(isSaving) return;
                 openView(marker.rowIds, marker);
-                // 画面の切り替わりを確実にするため少しだけ遅延させる
                 setTimeout(() => switchToEdit(), 50);
             });
 
