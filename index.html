@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>不動産管理マップ v4.22.0</title>
+    <title>不動産管理マップ v4.23.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -304,7 +304,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbwcNPxEjycOtyMqXO665COP1QXDYhA0oIokwdyhzH0K30UknqgSgkLaDpDSqcMjrUT1/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwsRZ_HdQmz1hjENYKoU3ULVwfj_iHjwV-CU1_FeYCOsRnReSr7p31M48KJzfe7QZC8/exec";
 
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
@@ -367,6 +367,7 @@
             if(dragLock || isDragging) return;
             closePanel(); 
         });
+        // マップ上のダブルクリックは「新規登録」
         map.addListener("dblclick", (e) => addNewProperty(e.latLng.lat(), e.latLng.lng()));
         
         map.getStreetView().addListener("visible_changed", () => {
@@ -880,15 +881,20 @@
           });
       };
 
-      // ★追加：フォルダ削除のロジックを含んだ新しい deleteProperty 関数
+      // ★新設：シンプルな削除フロー（フォルダIDを確実に見つけて送信する）
       window.deleteProperty = async () => {
           if(!confirm("この区画/タブを削除しますか？")) return;
 
-          let folderNameToDelete = null;
-          // 多棟現場のうち、最後の1タブを消す場合のみフォルダ削除のアラートを出す
-          if (currentTabs.length === 1) {
-              if(confirm("【確認】この物件の最後のデータです。\nGoogleドライブに保存されている物件ファイル（フォルダ）も一緒にゴミ箱へ移動しますか？\n\n※「キャンセル」を選ぶと、マップからピンは消えますがフォルダ自体は残ります。")) {
-                  folderNameToDelete = buildFolderName();
+          let folderIdToDelete = null;
+          const driveUrl = currentTabs[activeTabIndex].data.drive_url; // スプレッドシートから読み込んだ確実なURL
+          
+          if (driveUrl) {
+              if (confirm("【確認】\nGoogleドライブ上の関連ファイル(フォルダ)もゴミ箱に移動しますか？\n\n※他の区画とこのフォルダを共有している場合は「キャンセル」を選んでください。")) {
+                  // URLから「フォルダID」だけを抽出する
+                  const match = driveUrl.match(/folders\/([a-zA-Z0-9-_]+)/);
+                  if (match) {
+                      folderIdToDelete = match[1];
+                  }
               }
           }
 
@@ -899,7 +905,7 @@
                   body: JSON.stringify({
                       id: document.getElementById("form-id").value, 
                       mode: "delete",
-                      folderName: folderNameToDelete // GAS側にフォルダ名を送る
+                      folderId: folderIdToDelete // GASに確実なフォルダIDを送る
                   }) 
               });
               const result = await res.json();
@@ -983,10 +989,20 @@
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: div });
             marker.rowIds = ids;
             
+            // ★ シングルクリックは閲覧パネル
             div.addEventListener("click", (e) => {
                 e.stopPropagation(); 
                 openView(marker.rowIds, marker);
             });
+
+            // ★ ダブルクリックで直接編集パネルへジャンプ
+            div.addEventListener("dblclick", (e) => {
+                e.stopPropagation(); 
+                openView(marker.rowIds, marker);
+                // 画面の切り替わりを確実にするため少しだけ遅延させる
+                setTimeout(() => switchToEdit(), 50);
+            });
+
             return marker;
         });
 
