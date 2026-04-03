@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.8 (完全版)</title>
+    <title>不動産管理マップ v5.0.9 (機能・デザイン修正版)</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -33,8 +33,18 @@
         .filter-item input { cursor: pointer; }
 
         .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; flex-direction: column; }
-        .panel-header { padding: 15px 20px 10px 20px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
-        .panel-header h3 { margin: 0; font-size: 18px; color: #1a73e8; }
+        
+        /* 1行に収めるためのヘッダーデザイン調整 */
+        .panel-header { padding: 12px 15px 6px 15px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+        .panel-header h3 { margin: 0; font-size: 15px; color: #1a73e8; white-space: nowrap; }
+        .header-actions { display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; }
+        .btn-action { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .btn-action:hover { background: #e8f0fe; }
+        .btn-att-off { background: #f1f3f4; color: #5f6368; border: 1px solid #ccc; }
+        .btn-att-on { background: #e8f0fe; color: #1a73e8; border: 2px solid #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.4); }
+        .btn-switch-edit { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .btn-switch-edit:hover { background: #e8f0fe; }
+        .btn-close-view { background: #f1f3f4; border: none; color: #5f6368; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-left: 2px; font-weight: bold; }
         
         .tab-container { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
         .tab-container::-webkit-scrollbar { display: none; }
@@ -46,21 +56,9 @@
         .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
         
         #view-panel { background: white; }
-        #view-panel .panel-header { background: white; }
         #view-panel .tab-container { background: #f1f3f4; }
         #view-panel .tab.active { background: white; border-color: #ddd; }
         #view-panel .panel-body { background: white; }
-        
-        /* ボタン・ヘッダーアクション用スタイル */
-        .header-actions { display: flex; gap: 4px; align-items: center; }
-        .btn-action { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .btn-action:hover { background: #e8f0fe; }
-        .btn-att-off { background: #f1f3f4; color: #5f6368; border: 1px solid #ccc; }
-        .btn-att-on { background: #e8f0fe; color: #1a73e8; border: 2px solid #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.4); }
-
-        .btn-switch-edit { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .btn-switch-edit:hover { background: #e8f0fe; }
-        .btn-close-view { background: #f1f3f4; border: none; color: #5f6368; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-left: 2px; font-weight: bold; }
         
         .view-price-box { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
         .view-latest-price { font-size: 28px; font-weight: bold; color: #cf1322; margin: 0; line-height: 1; }
@@ -76,8 +74,6 @@
         .btn-drive-link:hover { background: #d3eadd; }
 
         #editor-panel { background: #e3f2fd; } 
-        #editor-panel .panel-header { background: #e3f2fd; }
-        #editor-panel .panel-header h3 { color: #1565c0; } 
         #editor-panel .tab-container { background: #bbdefb; border-bottom: 1px solid #90caf9; }
         #editor-panel .tab.active { background: #ffffff; border-color: #90caf9; color: #1565c0; }
         #editor-panel .panel-body { background: #ffffff; }
@@ -189,17 +185,17 @@
         </div>
 
         <div id="editor-panel" class="side-panel">
-            <div class="panel-header" style="display:block;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:block;">
+                <div class="panel-header">
                     <h3>✏️ 物件登録・編集</h3>
                     <div class="header-actions">
                         <button id="edit-att-btn" class="btn-action" onclick="toggleAttention()">★ 注目</button>
                         <button class="btn-action" onclick="touchUpdate()">変更なし</button>
-                        <button class="btn-switch-edit" onclick="switchToView()" style="color:#1565c0; border-color:#1565c0;">👁️ 閲覧モード</button>
+                        <button class="btn-switch-edit" onclick="switchToView()" style="color:#1565c0; border-color:#1565c0;">👁️ 閲覧</button>
                         <button class="btn-close-view" onclick="closePanel()">✖</button>
                     </div>
                 </div>
-                <div class="drag-notice">※編集中のマーカーは地図上でドラッグ移動できます</div>
+                <div class="drag-notice" style="padding: 0 15px 5px 15px; margin: 0;">※編集中のマーカーは地図上でドラッグ移動できます</div>
             </div>
             <div class="tab-container" id="tab-bar"></div>
             <div class="panel-body" id="form-container">
@@ -354,7 +350,7 @@
                     <div class="siire-unit-box" style="margin-top:10px;"><label style="font-size:11px; color:#52c41a;">仕入坪単価：</label><span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span></div>
                 </div>
 
-                <button class="btn-save" onclick="submitForm()">保存</button>
+                <button class="btn-save" onclick="submitForm()">保存して閉じる</button>
                 <button class="btn-cancel" onclick="switchToView()">キャンセルして戻る</button>
                 <button class="btn-delete" id="delete-btn" onclick="deleteProperty()" style="display:none;">この区画を削除する</button>
             </div>
@@ -365,12 +361,12 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbwS41wZa5Wb2nBH5TzWY23aP-aw6OMyEY6x8zW_elTW1hadZgqgVLUoeRG8xNkKv6t-/exec";
+      // ★修正：正しいGAS_URLに戻しました
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbzczn5WtaFm4Buk2ZlD0ehYUo1GhXGgyrZ8BtzulDPh19nZI-ysxcPhLp5zjq5tQ3rz/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
 
-      // ★追加：エラー時に強制ログアウトさせる関数
       function forceLogout() {
           sessionStorage.removeItem("mapAuthStatus");
           sessionStorage.removeItem("mapUserName");
@@ -384,9 +380,6 @@
           errorMsg.style.display = "block";
       }
 
-      // ==========================================
-      // 【１】ログイン処理 ＆ 画面の切り替え
-      // ==========================================
       async function doLogin() {
           const nameInput = document.getElementById("user-name").value.trim();
           const passInput = document.getElementById("user-pass").value.trim();
@@ -429,7 +422,7 @@
           document.getElementById('main-app').style.display = 'block';
           
           if (typeof google === 'object' && typeof google.maps === 'object') {
-              fetchMapData(); // ログイン後にデータを再取得
+              fetchMapData();
           } else {
               const script = document.createElement('script');
               script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=marker&v=weekly&callback=initMap`;
@@ -443,9 +436,6 @@
           }
       });
 
-      // ==========================================
-      // 【２】不動産マップのメインシステム
-      // ==========================================
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
           "form-addr1":"addr1", "form-addr2":"addr2", "form-addr3":"addr3",
@@ -499,7 +489,6 @@
             zoom: 14, 
             mapId: MAP_ID, 
             disableDoubleClickZoom: true,
-            // ★追加: コントロール位置の指定
             mapTypeControl: true,
             mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_LEFT },
             streetViewControl: true,
@@ -522,6 +511,24 @@
             document.getElementById("filter-panel").style.display = isSV ? "none" : "flex";
             if (isSV && !isSaving) closePanel();
         });
+
+        // ★修正：コントロールの並び順（「地図/航空写真」「ペグマン」）と位置調整
+        const offset = setInterval(() => {
+            const mtc = document.querySelector('.gm-style-mtc');
+            const pegman = document.querySelector('.gm-svpc');
+            if (mtc && pegman) {
+                const mtcRoot = mtc.closest('.gmnoprint').parentElement;
+                const pegmanRoot = pegman.closest('.gmnoprint');
+                if (mtcRoot && pegmanRoot && mtcRoot.parentElement === pegmanRoot.parentElement) {
+                    // ペグマンを最後尾に移動させて並び順を調整
+                    mtcRoot.parentElement.appendChild(pegmanRoot);
+                    // 検索窓と左端をピタリと揃える
+                    mtcRoot.parentElement.style.left = "10px";
+                    mtcRoot.parentElement.style.top = "10px";
+                    clearInterval(offset);
+                }
+            }
+        }, 500);
 
         fetchMapData();
       }
