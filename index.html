@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.14</title>
+    <title>不動産管理マップ v5.0.15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -69,8 +69,6 @@
         .view-item div { color: #202124; font-weight: bold; word-break: break-all; }
         .view-item.full-width { grid-column: span 2; }
         .view-item.sold-box { background: #fff1f0; border-color: #ffa39e; }
-        .btn-drive-link { display: block; background: #e6f4ea; color: #137333; text-align: center; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; border: 1px solid #ceead6; font-size: 14px; margin-top: 5px; }
-        .btn-drive-link:hover { background: #d3eadd; }
 
         #editor-panel { background: #e3f2fd; } 
         #editor-panel .tab-container { background: #bbdefb; border-bottom: 1px solid #90caf9; }
@@ -290,7 +288,7 @@
                         <div class="flex-item"><label>支店名</label><input type="text" id="form-shiten" placeholder="支店名"></div>
                     </div>
                     <div class="flex-row" style="margin-bottom:8px;">
-                        <div class="flex-item"><label>取引態様</label><select id="form-taiyou"><option value="">選択</option><option value="売主">売主</option><option value="仲介(専)">仲介(専)</option><option value="仲介(一般)">仲介(一般)</option><option value="販売代理">販売代理</option></select></div>
+                        <div class="flex-item"><label>取引態様</label><select id="form-taiyou"><option value="">選択</option><option value="売主">売主</option><option value="仲介(専任)">仲介(専任)</option><option value="仲介(一般)">仲介(一般)</option><option value="仲介(不明)">仲介(不明)</option><option value="販売代理">販売代理</option></select></div>
                         <div class="flex-item"><label>登録媒体</label><select id="form-media"><option value="">選択</option><option value="レインズ">レインズ</option><option value="仲介HP">仲介HP</option><option value="売主HP">売主HP</option><option value="ポータル">ポータル</option><option value="紹介">紹介</option><option value="その他">その他</option></select></div>
                     </div>
                     <label>紹介担当者</label><input type="text" id="form-intro-user" placeholder="担当者名">
@@ -715,7 +713,6 @@
           const parts = raw.split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
       }
 
-      // ★追加: 閲覧モードでファイルを非同期取得する関数
       async function fetchViewFiles(data, containerId) {
           const el = document.getElementById(containerId);
           if (!el) return;
@@ -801,11 +798,16 @@
               }
           }
 
+          // ★修正: 住所表示部分をGoogleマップへのリンクに変更
+          let mapLinkUrl = data.map_url || `https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}`;
+          
           let html = `
               <div style="margin-bottom:10px;">
                   <span style="background:#e8eaed; color:#5f6368; padding:4px 8px; border-radius:4px; font-size:14px; font-weight:bold;">${data.type || "種別未定"}</span>
                   ${data.name ? `<div style="font-size:16px; font-weight:bold; margin-top:8px; color:#202124;">${data.name}</div>` : ""}
-                  <div style="font-size:12px; color:#5f6368; margin-top:4px;">📍 ${data.addr1||""}${data.addr2||""}${data.addr3||""}</div>
+                  <div style="font-size:12px; margin-top:4px;">
+                      📍 <a href="${mapLinkUrl}" target="_blank" style="color:#1a73e8; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${data.addr1||""}${data.addr2||""}${data.addr3||""}</a>
+                  </div>
               </div>
               <div class="view-price-box">
                   <div class="view-latest-price">${displayLatestPrice}</div>
@@ -849,7 +851,6 @@
           html += vItem("入力担当", data.user);
           html += `</div>`;
 
-          // ★変更: ドライブ全体を開くボタンから、個別のファイルリスト表示に変更
           let fileAreaId = "view-file-list-" + data.id;
           html += `<div class="section-title">添付ファイル</div>
                    <div id="${fileAreaId}" style="background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e8eaed;">
@@ -872,7 +873,6 @@
 
           container.innerHTML = html;
 
-          // ★追加: フォルダURLが存在する場合はファイルを検索してリストを表示する
           if (data.drive_url) {
               fetchViewFiles(data, fileAreaId);
           }
@@ -1183,7 +1183,8 @@
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
                 dataCopy.folderName = fName;
-                dataCopy.map_url = `http://maps.google.com/maps?q=${dataCopy.lat},${dataCopy.lng}`;
+                // ★修正: GoogleマップURLの生成コードを正しく修正
+                dataCopy.map_url = `https://www.google.com/maps/search/?api=1&query=${dataCopy.lat},${dataCopy.lng}`;
                 return dataCopy;
             });
 
