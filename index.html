@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.15</title>
+    <title>不動産管理マップ v5.0.16</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -276,8 +276,15 @@
                         <label style="font-size:10px; color:#c41d7f;">想定建物価格(万円)</label>
                         <input type="text" id="form-sub-price" class="comma-input only-num" placeholder="未入力で「入力待ち」表示">
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span id="label-land" style="font-size:12px; font-weight:bold;">土地坪単価：</span><span id="val-land" class="price-display">- 万円</span>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                        <div>
+                            <span id="label-land" style="font-size:12px; font-weight:bold;">土地坪単価：</span>
+                            <span id="val-land" class="price-display">- 万円</span>
+                        </div>
+                        <div id="build-unit-box" style="display:none; text-align:right;">
+                            <span style="font-size:10px; color:#c41d7f;">建物坪単価：</span>
+                            <span id="val-build-unit" style="font-size:13px; font-weight:bold; color:#c41d7f;">- 万円</span>
+                        </div>
                     </div>
                 </div>
 
@@ -357,7 +364,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbyVOgA76VEZIxkqw6tYLNWnncz8nrM30W1nYkp6p43UsVTR31vhJ37splMXmMgyS6oV/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxkDMGN1lCjGhcrpFAkTKHLdSn9pdJgNfbnveX_wK2WUkKm3qSmtU54BCzpVriJ8kUk/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -662,15 +669,19 @@
           });
       }
 
+      // ★修正: アクティブなタブだけでなく、保存済みの全タブデータを一括で送信し、グループ全体の更新日を統一する
       window.touchUpdate = async (silent = false) => {
-          const id = currentTabs[activeTabIndex].data.id;
-          if(!id) return;
+          const updateData = currentTabs
+              .filter(t => t.data.id) // 未保存（IDが空）の新規区画は除外
+              .map(t => { return { id: t.data.id, is_att: t.data.is_att }; });
+              
+          if(updateData.length === 0) return; // 送信するデータがなければ終了
+
           document.getElementById("saving-overlay").style.display = "flex";
           try {
-              const isAtt = currentTabs[activeTabIndex].data.is_att;
               await fetch(GAS_URL, { 
                   method:"POST", headers: { "Content-Type": "text/plain" },
-                  body: JSON.stringify({ mode: "touch_update", reqUser: getUser(), password: getPass(), data: [{id: id, is_att: isAtt}] }) 
+                  body: JSON.stringify({ mode: "touch_update", reqUser: getUser(), password: getPass(), data: updateData }) 
               });
               await fetchMapData();
           } catch(e) {
@@ -798,8 +809,7 @@
               }
           }
 
-          // ★修正: 住所表示部分をGoogleマップへのリンクに変更
-          let mapLinkUrl = data.map_url || `https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}`;
+          let mapLinkUrl = data.map_url || `https://www.google.com/maps/search/?api=1&query=$${data.lat},${data.lng}`;
           
           let html = `
               <div style="margin-bottom:10px;">
@@ -1105,6 +1115,9 @@
         const buildPriceInput = document.getElementById('build-price-input');
         const labelLand = document.getElementById('label-land');
         const valLand = document.getElementById('val-land');
+        
+        const buildUnitBox = document.getElementById('build-unit-box');
+        const valBuildUnit = document.getElementById('val-build-unit');
 
         const patternA = ["新築戸建", "中古戸建", "自社新築", "自社中古", "自社新築(情開)", "自社中古(情開)"];
         const patternB = ["売地", "自社売地", "自社売地(情開)", "査定依頼"];
@@ -1113,6 +1126,16 @@
         if (patternA.includes(type)) {
             buildPriceInput.style.display = "block";
             labelLand.innerText = "土地坪単価：";
+            
+            // ★追加: 建物坪単価の計算と表示
+            if (subP > 0 && bTsubo > 0) {
+                let bUnit = subP / bTsubo;
+                buildUnitBox.style.display = "block";
+                valBuildUnit.innerText = bUnit.toLocaleString(undefined, {maximumFractionDigits: 1}) + " 万円";
+            } else {
+                buildUnitBox.style.display = "none";
+            }
+
             if (subPStr === "") {
                 valLand.innerText = "建物価格入力待ち";
                 valLand.style.fontSize = "14px";
@@ -1128,6 +1151,7 @@
             }
         } else if (patternB.includes(type)) {
             buildPriceInput.style.display = "none";
+            buildUnitBox.style.display = "none";
             labelLand.innerText = "土地坪単価：";
             if (latestPrice > 0 && lTsubo > 0) {
                 let unitPrice = latestPrice / lTsubo;
@@ -1139,6 +1163,7 @@
             }
         } else if (patternC.includes(type)) {
             buildPriceInput.style.display = "none";
+            buildUnitBox.style.display = "none";
             labelLand.innerText = "MS床単価：";
             if (latestPrice > 0 && bTsubo > 0) {
                 let unitPrice = latestPrice / bTsubo;
@@ -1150,6 +1175,7 @@
             }
         } else {
             buildPriceInput.style.display = "none";
+            buildUnitBox.style.display = "none";
             labelLand.innerText = "土地/MS単価：";
             valLand.innerText = "- 万円";
             valLand.style.fontSize = "16px";
@@ -1183,8 +1209,7 @@
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
                 dataCopy.folderName = fName;
-                // ★修正: GoogleマップURLの生成コードを正しく修正
-                dataCopy.map_url = `https://www.google.com/maps/search/?api=1&query=${dataCopy.lat},${dataCopy.lng}`;
+                dataCopy.map_url = `https://www.google.com/maps/search/?api=1&query=$${dataCopy.lat},${dataCopy.lng}`;
                 return dataCopy;
             });
 
