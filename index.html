@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.10</title>
+    <title>不動産管理マップ v5.0.11</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -34,7 +34,6 @@
 
         .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; flex-direction: column; }
         
-        /* 1行に収めるためのヘッダーデザイン調整 */
         .panel-header { padding: 12px 15px 6px 15px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
         .panel-header h3 { margin: 0; font-size: 15px; color: #1a73e8; white-space: nowrap; }
         .header-actions { display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; }
@@ -63,7 +62,7 @@
         .view-price-box { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
         .view-latest-price { font-size: 28px; font-weight: bold; color: #cf1322; margin: 0; line-height: 1; }
         .view-price-history { font-size: 13px; color: #666; margin-top: 8px; font-weight: bold; line-height: 1.5; }
-        .view-unit-price { font-size: 13px; color: #d46b08; margin-top: 8px; background: #fff1b8; display: inline-block; padding: 2px 8px; border-radius: 4px; }
+        .view-unit-price { font-size: 13px; color: #d46b08; margin-top: 8px; background: #fff1b8; display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
         .view-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; margin-bottom: 10px; }
         .view-item { background: #f8f9fa; padding: 8px 10px; border-radius: 6px; border: 1px solid #e8eaed; }
         .view-item span { display: block; font-size: 10px; color: #80868b; margin-bottom: 2px; }
@@ -112,7 +111,6 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
         }
 
-        /* 注目継続アニメーション */
         .attention-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; border: 4px solid rgba(0, 123, 255, 0.7); border-radius: 50%; pointer-events: none; animation: att-pulse 2s infinite; }
         @keyframes att-pulse { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
         
@@ -279,10 +277,10 @@
                 <div id="unit-price-container">
                     <div id="build-price-input" style="display:none; margin-bottom:10px;">
                         <label style="font-size:10px; color:#c41d7f;">想定建物価格(万円)</label>
-                        <input type="text" id="form-sub-price" class="comma-input only-num">
+                        <input type="text" id="form-sub-price" class="comma-input only-num" placeholder="未入力で「入力待ち」表示">
                     </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span id="label-land" style="font-size:12px;">土地坪単価：</span><span id="val-land" class="price-display">- 万円</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span id="label-land" style="font-size:12px; font-weight:bold;">土地坪単価：</span><span id="val-land" class="price-display">- 万円</span>
                     </div>
                 </div>
 
@@ -357,11 +355,12 @@
         </div>
 
         <div id="map"></div>
-    </div> <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    </div> 
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbwEL9eIfBv5bZId4Tw3mpf7t6PbGTZYd94o6zcLZlfZFc4io3sqlDo1qI7uiMogkQhX/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxsNyMul1rFEhwsQWEGLMubv4olgQgJEi8OT2J2dyG7DOKCY4sUrbWhmMymh7G3ki6T/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -370,10 +369,8 @@
           sessionStorage.removeItem("mapAuthStatus");
           sessionStorage.removeItem("mapUserName");
           sessionStorage.removeItem("mapPassword");
-          
           document.getElementById('main-app').style.display = 'none';
           document.getElementById('login-screen').style.display = 'flex';
-          
           const errorMsg = document.getElementById("login-error-msg");
           errorMsg.innerText = "パスワードが変更されたか、セッションが無効です。再度ログインしてください。";
           errorMsg.style.display = "block";
@@ -384,13 +381,11 @@
           const passInput = document.getElementById("user-pass").value.trim();
           const errorMsg = document.getElementById("login-error-msg");
           const btn = document.getElementById("login-btn");
-
           errorMsg.style.display = "none";
           if (!nameInput || !passInput) {
               errorMsg.innerText = "名前とパスワードを両方入力してください。";
               errorMsg.style.display = "block"; return;
           }
-
           btn.disabled = true; btn.innerText = "認証中...";
 
           try {
@@ -405,11 +400,8 @@
                   sessionStorage.setItem("mapAuthStatus", "authorized");
                   sessionStorage.setItem("mapUserName", nameInput);
                   sessionStorage.setItem("mapPassword", passInput); 
-                  
                   showAppScreen();
-              } else {
-                  throw new Error(result.error);
-              }
+              } else { throw new Error(result.error); }
           } catch (e) {
               errorMsg.innerText = e.message || "通信エラーが発生しました。";
               errorMsg.style.display = "block";
@@ -420,7 +412,6 @@
       function showAppScreen() {
           document.getElementById('login-screen').style.display = 'none';
           document.getElementById('main-app').style.display = 'block';
-          
           if (typeof google === 'object' && typeof google.maps === 'object') {
               fetchMapData();
           } else {
@@ -431,9 +422,7 @@
       }
 
       window.addEventListener('load', () => {
-          if (sessionStorage.getItem("mapAuthStatus") === "authorized") {
-              showAppScreen();
-          }
+          if (sessionStorage.getItem("mapAuthStatus") === "authorized") showAppScreen();
       });
 
       const FORM_MAP = {
@@ -452,22 +441,14 @@
       };
 
       const ICON_MAP = {
-          "新築戸建": "https://sohken-homes.github.io/icon_new_house.png",
-          "中古戸建": "https://sohken-homes.github.io/icon_used_house.png",
-          "売地": "https://sohken-homes.github.io/icon_land.png",
-          "自社新築": "https://sohken-homes.github.io/icon_jisha_new.png", 
-          "自社中古": "https://sohken-homes.github.io/icon_jisha_used.png",
-          "自社売地": "https://sohken-homes.github.io/icon_jisha_land.png",
-          "自社新築(情開)": "https://sohken-homes.github.io/icon_jisha_new_info.png",
-          "自社中古(情開)": "https://sohken-homes.github.io/icon_jisha_used_info.png",
-          "自社売地(情開)": "https://sohken-homes.github.io/icon_jisha_land_info.png",
-          "自社中古MS(情開)": "https://sohken-homes.github.io/icon_jisha_ms_info.png",
-          "新築MS": "https://sohken-homes.github.io/icon_new_ms.png",
-          "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
-          "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png",
-          "査定依頼MS": "https://sohken-homes.github.io/icon_satei_ms.png",
-          "SOLD": "https://sohken-homes.github.io/sold_house.png",
-          "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
+          "新築戸建": "https://sohken-homes.github.io/icon_new_house.png", "中古戸建": "https://sohken-homes.github.io/icon_used_house.png",
+          "売地": "https://sohken-homes.github.io/icon_land.png", "自社新築": "https://sohken-homes.github.io/icon_jisha_new.png", 
+          "自社中古": "https://sohken-homes.github.io/icon_jisha_used.png", "自社売地": "https://sohken-homes.github.io/icon_jisha_land.png",
+          "自社新築(情開)": "https://sohken-homes.github.io/icon_jisha_new_info.png", "自社中古(情開)": "https://sohken-homes.github.io/icon_jisha_used_info.png",
+          "自社売地(情開)": "https://sohken-homes.github.io/icon_jisha_land_info.png", "自社中古MS(情開)": "https://sohken-homes.github.io/icon_jisha_ms_info.png",
+          "新築MS": "https://sohken-homes.github.io/icon_new_ms.png", "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
+          "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png", "査定依頼MS": "https://sohken-homes.github.io/icon_satei_ms.png",
+          "SOLD": "https://sohken-homes.github.io/sold_house.png", "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
       };
 
       let map, geocoder, allData = [], currentEditingMarker = null, markersList = [];
@@ -485,14 +466,10 @@
       async function initMap() {
         const { Map } = google.maps;
         map = new Map(document.getElementById("map"), { 
-            center: { lat: 35.700, lng: 139.630 }, 
-            zoom: 14, 
-            mapId: MAP_ID, 
-            disableDoubleClickZoom: true,
-            mapTypeControl: true,
+            center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID, 
+            disableDoubleClickZoom: true, mapTypeControl: true,
             mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_LEFT },
-            streetViewControl: true,
-            streetViewControlOptions: { position: google.maps.ControlPosition.TOP_LEFT }
+            streetViewControl: true, streetViewControlOptions: { position: google.maps.ControlPosition.TOP_LEFT }
         });
         geocoder = new google.maps.Geocoder();
         
@@ -531,18 +508,13 @@
       }
 
       function highlightMarker(marker) {
-          if (currentEditingMarker && currentEditingMarker.content) {
-              currentEditingMarker.content.classList.remove('active-marker');
-          }
+          if (currentEditingMarker && currentEditingMarker.content) currentEditingMarker.content.classList.remove('active-marker');
           currentEditingMarker = marker;
-          if (marker && marker.content) {
-              marker.content.classList.add('active-marker');
-          }
+          if (marker && marker.content) marker.content.classList.add('active-marker');
       }
 
       function parseAddress(fullAddress) {
-          let address = fullAddress.replace(/^日本、/, "").replace(/^〒\d{3}-\d{4}\s*/, "");
-          address = address.replace(/^.{2,3}[都道府県]/, "");
+          let address = fullAddress.replace(/^日本、/, "").replace(/^〒\d{3}-\d{4}\s*/, "").replace(/^.{2,3}[都道府県]/, "");
           let city = "", chome = "", banchi = "";
           const cityMatch = address.match(/^.*?[市区町村]/);
           if (cityMatch) { city = cityMatch[0]; address = address.replace(cityMatch[0], "").trim(); }
@@ -550,8 +522,7 @@
           if (address.includes("丁目")) {
               const idx = address.indexOf("丁目") + 2; 
               chome = address.substring(0, idx);
-              banchi = address.substring(idx).trim();
-              banchi = banchi.replace(/^[ー－\-－\s]+/, "");
+              banchi = address.substring(idx).trim().replace(/^[ー－\-－\s]+/, "");
           } else {
               const numMatch = address.match(/[0-9０-９]/);
               if (numMatch) {
@@ -560,7 +531,6 @@
                   banchi = address.substring(numIdx).trim();
               } else { chome = address; }
           }
-          
           document.getElementById("form-addr1").value = city;
           document.getElementById("form-addr2").value = chome;
           document.getElementById("form-addr3").value = banchi;
@@ -573,6 +543,7 @@
           });
       }
 
+      // ★修正: ドラッグ直後に誤ってクリック判定されないようドラッグロックの解除を遅延
       window.addNewProperty = (lat, lng) => {
         closePanel();
         const img = document.createElement("img"); img.src = ICON_MAP["DEFAULT"]; img.style.width = "32px"; img.style.cursor = "pointer";
@@ -585,10 +556,10 @@
         
         marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
         marker.addListener('dragend', (e) => {
-            isDragging = false; 
             currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
             fetchAddress(e.latLng.lat(), e.latLng.lng());
-            setTimeout(() => { dragLock = false; }, 200);
+            // ドラッグ終了後、少し時間をあけてからクリック判定のロックを解除する
+            setTimeout(() => { isDragging = false; dragLock = false; }, 300);
         });
         
         fetchAddress(lat, lng);
@@ -614,8 +585,7 @@
                   "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
                   "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
                   "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis",
-                  "ドライブURL":"drive_url", "マップURL":"map_url",
-                  "注目継続":"is_att"
+                  "ドライブURL":"drive_url", "マップURL":"map_url", "注目継続":"is_att"
               };
               Object.keys(sheetToKey).forEach(s => { if (r[s] !== undefined) data[sheetToKey[s]] = r[s]; });
               data.is_att = (data.is_att === true || data.is_att === "TRUE");
@@ -636,16 +606,16 @@
           updateAttButtonUI(currentTabs[0].data.is_att);
       };
 
+      // ★修正: 既存マーカー編集モード移行時もドラッグロックを強化
       window.switchToEdit = () => {
           document.getElementById("view-panel").style.setProperty("display", "none", "important");
           if(currentEditingMarker) {
               currentEditingMarker.gmpDraggable = true;
               currentEditingMarker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
               currentEditingMarker.addListener('dragend', (e) => {
-                  isDragging = false; 
                   currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
                   fetchAddress(e.latLng.lat(), e.latLng.lng());
-                  setTimeout(() => { dragLock = false; }, 200);
+                  setTimeout(() => { isDragging = false; dragLock = false; }, 300);
               });
           }
           loadTabData(currentTabs[activeTabIndex].data); 
@@ -685,7 +655,6 @@
           d.is_att = !d.is_att;
           document.getElementById('form-is-att').checked = d.is_att;
           updateAttButtonUI(d.is_att);
-          
           if(document.getElementById('view-panel').style.display === 'flex' || document.getElementById('view-panel').style.display === 'block') {
               touchUpdate(true);
           }
@@ -708,23 +677,15 @@
           try {
               const isAtt = currentTabs[activeTabIndex].data.is_att;
               await fetch(GAS_URL, { 
-                  method:"POST", 
-                  headers: { "Content-Type": "text/plain" },
-                  body: JSON.stringify({ 
-                      mode: "touch_update", 
-                      reqUser: getUser(), 
-                      password: getPass(), 
-                      data: [{id: id, is_att: isAtt}] 
-                  }) 
+                  method:"POST", headers: { "Content-Type": "text/plain" },
+                  body: JSON.stringify({ mode: "touch_update", reqUser: getUser(), password: getPass(), data: [{id: id, is_att: isAtt}] }) 
               });
               await fetchMapData();
               if(!silent) alert("更新日を記録しました");
           } catch(e) {
               if(e.message && e.message.includes("パスワード")) forceLogout();
-              else if(!silent) alert("エラーが発生しました: " + e.message + "\n※GAS側に「注目継続」の列がない可能性があります。");
-          } finally { 
-              document.getElementById("saving-overlay").style.display = "none"; 
-          }
+              else if(!silent) alert("エラーが発生しました: " + e.message);
+          } finally { document.getElementById("saving-overlay").style.display = "none"; }
       };
 
       function renderViewTabs() {
@@ -761,6 +722,7 @@
           const parts = raw.split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
       }
 
+      // ★修正: 最新価格を正しく取得して、3パターンの単価を計算するロジック（閲覧モード用）
       function loadViewData(data) {
           const container = document.getElementById("view-container");
           let prices = [];
@@ -772,22 +734,45 @@
           let isSold = (data.is_sold === true || data.is_sold === "TRUE");
           if(isSold && data.p_s) prices.push({p: data.p_s, sold: true});
           
-          let latestPrice = prices.length > 0 ? formatNumberWithComma(prices[prices.length - 1].p) + " 万円" : "価格未定";
-          if(isSold) latestPrice = "成約済: " + latestPrice;
+          let latestPriceStr = prices.length > 0 ? prices[prices.length - 1].p : "";
+          let latestPriceNum = parseFloat(removeComma(latestPriceStr)) || 0;
+
+          let displayLatestPrice = latestPriceStr ? formatNumberWithComma(latestPriceStr) + " 万円" : "価格未定";
+          if(isSold) displayLatestPrice = "成約済: " + displayLatestPrice;
           
           let historyStr = "";
           if(prices.length > 1) {
               historyStr = prices.map(item => `<span style="white-space: nowrap;">${formatNumberWithComma(item.p)}万</span>`).join(" ➔ ");
           }
 
+          let subPStr = data.sub_p !== undefined && data.sub_p !== "" ? data.sub_p.toString() : "";
+          let subP = parseFloat(removeComma(subPStr)) || 0;
+          let lTsubo = parseFloat(data.t_tsubo) || 0;
+          let bTsubo = parseFloat(data.b_tsubo) || 0;
+          let type = data.type || "";
+
+          const patternA = ["新築戸建", "中古戸建", "自社新築", "自社中古", "自社新築(情開)", "自社中古(情開)"];
+          const patternB = ["売地", "自社売地", "自社売地(情開)", "査定依頼"];
+          const patternC = ["新築MS", "中古MS", "査定依頼MS", "自社中古MS(情開)"];
+
           let unitPriceStr = "";
-          let unitLabel = (data.type && data.type.includes("MS")) ? "マンション床単価" : "土地坪単価";
-          let areaTsubo = (data.type && data.type.includes("MS")) ? parseFloat(data.b_tsubo) : parseFloat(data.t_tsubo);
-          if (prices.length > 0 && areaTsubo > 0) {
-              let latestNum = parseFloat(removeComma(prices[prices.length - 1].p));
-              let subP = parseFloat(data.sub_p) || 0;
-              let calcBase = (unitLabel === "土地坪単価" && data.type && data.type.includes("戸建")) ? (latestNum - subP) : latestNum;
-              unitPriceStr = `${unitLabel}: ${(calcBase / areaTsubo).toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪`;
+          if (patternA.includes(type)) {
+              if (subPStr === "") {
+                  unitPriceStr = "土地坪単価: 建物価格入力待ち";
+              } else if (latestPriceNum > 0 && lTsubo > 0) {
+                  let unitPrice = (latestPriceNum - subP) / lTsubo;
+                  unitPriceStr = `土地坪単価: ${unitPrice.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪`;
+              }
+          } else if (patternB.includes(type)) {
+              if (latestPriceNum > 0 && lTsubo > 0) {
+                  let unitPrice = latestPriceNum / lTsubo;
+                  unitPriceStr = `土地坪単価: ${unitPrice.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪`;
+              }
+          } else if (patternC.includes(type)) {
+              if (latestPriceNum > 0 && bTsubo > 0) {
+                  let unitPrice = latestPriceNum / bTsubo;
+                  unitPriceStr = `MS床単価: ${unitPrice.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪`;
+              }
           }
 
           let html = `
@@ -797,7 +782,7 @@
                   <div style="font-size:12px; color:#5f6368; margin-top:4px;">📍 ${data.addr1||""}${data.addr2||""}${data.addr3||""}</div>
               </div>
               <div class="view-price-box">
-                  <div class="view-latest-price">${latestPrice}</div>
+                  <div class="view-latest-price">${displayLatestPrice}</div>
                   ${historyStr ? `<div class="view-price-history">${historyStr}</div>` : ""}
                   ${unitPriceStr ? `<div class="view-unit-price">${unitPriceStr}</div>` : ""}
               </div>
@@ -818,7 +803,7 @@
           html += vItem("土地面積", data.t_m2 ? `${formatAreaStrict(data.t_m2)} ㎡ (${formatAreaStrict(data.t_tsubo)} 坪)` : "");
           html += vItem("建物面積", data.b_m2 ? `${formatAreaStrict(data.b_m2)} ㎡ (${formatAreaStrict(data.b_tsubo)} 坪)` : "");
           html += vItem("間取り", data.layout);
-          if(data.sub_p) html += vItem("想定建物価格", `${formatNumberWithComma(data.sub_p)} 万円`);
+          if(patternA.includes(type) && subPStr !== "") html += vItem("想定建物価格", `${formatNumberWithComma(subPStr)} 万円`);
           html += `</div>`;
 
           html += `<div class="section-title">公法制限・接道・交通</div><div class="view-grid">`;
@@ -883,8 +868,7 @@
         const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
         baseData.id = ""; baseData.tab_name = `区画${currentTabs.length + 1}`;
         ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold", "d_first", "d_c1", "d_c2", "d_c3", "d_s", "user"].forEach(k => baseData[k] = "");
-        baseData.is_att = false;
-        baseData.user = getUser();
+        baseData.is_att = false; baseData.user = getUser();
         currentTabs.push({ label: baseData.tab_name, data: baseData });
         activeTabIndex = currentTabs.length - 1; loadTabData(baseData); renderTabs();
       }
@@ -981,7 +965,7 @@
                   refreshFileList();
               } catch (err) { 
                   if(err.message.includes("パスワードが正しくありません")) forceLogout();
-                  else { alert("アップロード失敗: " + err.message + "\n※通信エラーか、GAS側で問題が発生しています。"); refreshFileList(); }
+                  else { alert("アップロード失敗: " + err.message + "\n※GAS側にファイル処理プログラムが不足しています。"); refreshFileList(); }
               }
           };
           reader.readAsDataURL(file);
@@ -997,8 +981,7 @@
           listEl.innerHTML = "<div style='color:#666; text-align:center;'>ファイル一覧を取得中...</div>";
           try {
               const res = await fetch(GAS_URL, { 
-                  method: "POST", 
-                  headers: { "Content-Type": "text/plain" }, 
+                  method: "POST", headers: { "Content-Type": "text/plain" }, 
                   body: JSON.stringify({ mode: "get_files", reqUser: getUser(), password: getPass(), addr1, folderName, groupId }) 
               });
               const result = await res.json();
@@ -1032,8 +1015,7 @@
           try {
               document.getElementById('file-list').innerHTML = "<div style='color:#666; text-align:center;'>名前を変更中...</div>";
               const res = await fetch(GAS_URL, { 
-                  method: "POST", 
-                  headers: { "Content-Type": "text/plain" }, 
+                  method: "POST", headers: { "Content-Type": "text/plain" }, 
                   body: JSON.stringify({ mode: "rename_file", reqUser: getUser(), password: getPass(), fileId: id, newName: newName }) 
               });
               const result = await res.json();
@@ -1050,8 +1032,7 @@
           try {
               document.getElementById('file-list').innerHTML = "<div style='color:#666; text-align:center;'>削除中...</div>";
               const res = await fetch(GAS_URL, { 
-                  method: "POST", 
-                  headers: { "Content-Type": "text/plain" }, 
+                  method: "POST", headers: { "Content-Type": "text/plain" }, 
                   body: JSON.stringify({ mode: "delete_file", reqUser: getUser(), password: getPass(), fileId: id }) 
               });
               const result = await res.json();
@@ -1063,21 +1044,83 @@
           }
       }
 
+      // ★修正: 最新価格から3パターンの条件分岐を用いて単価を計算する処理（編集モード用）
       function updateAutoFields() {
-        const type = document.getElementById('form-type').value;
-        const pFirst = parseFloat(removeComma(document.getElementById('form-p-first').value)) || 0;
-        const subP = parseFloat(removeComma(document.getElementById('form-sub-price').value)) || 0;
-        const lTsubo = parseFloat(removeComma(document.getElementById('form-t-tsubo').value)) || 0;
-        const siireP = parseFloat(removeComma(document.getElementById('siire-price').value)) || 0;
-        const siireM2 = parseFloat(removeComma(document.getElementById('siire-m2').value)) || 0;
+        const type = document.getElementById('form-type').value || "";
+        
+        const getVal = id => parseFloat(removeComma(document.getElementById(id).value)) || 0;
+        const pS = getVal('form-p-s');
+        const pC3 = getVal('form-p-c3');
+        const pC2 = getVal('form-p-c2');
+        const pC1 = getVal('form-p-c1');
+        const pFirst = getVal('form-p-first');
+        
+        // 成約価格 ＞ 価格3 ＞ 価格2 ＞ 価格1 ＞ 初回価格 の優先順で最新価格を特定
+        let latestPrice = pS > 0 ? pS : (pC3 > 0 ? pC3 : (pC2 > 0 ? pC2 : (pC1 > 0 ? pC1 : pFirst)));
+
+        const subPStr = removeComma(document.getElementById('form-sub-price').value);
+        const subP = parseFloat(subPStr) || 0;
+        const lTsubo = getVal('form-t-tsubo');
+        const bTsubo = getVal('form-b-tsubo');
+
+        const siireP = getVal('siire-price');
+        const siireM2 = getVal('siire-m2');
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         
         document.getElementById('siire-tsubo').value = formatAreaStrict(sTsubo);
         document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
-        document.getElementById('build-price-input').style.display = (type.includes("戸建") || type.includes("自社")) ? "block" : "none";
-        if (lTsubo > 0) {
-            const lp = type.includes("戸建") ? (pFirst - subP) : pFirst;
-            document.getElementById('val-land').innerText = (lp / lTsubo).toLocaleString(undefined, {maximumFractionDigits: 1}) + " 万円";
+
+        const buildPriceInput = document.getElementById('build-price-input');
+        const labelLand = document.getElementById('label-land');
+        const valLand = document.getElementById('val-land');
+
+        const patternA = ["新築戸建", "中古戸建", "自社新築", "自社中古", "自社新築(情開)", "自社中古(情開)"];
+        const patternB = ["売地", "自社売地", "自社売地(情開)", "査定依頼"];
+        const patternC = ["新築MS", "中古MS", "査定依頼MS", "自社中古MS(情開)"];
+
+        if (patternA.includes(type)) {
+            buildPriceInput.style.display = "block";
+            labelLand.innerText = "土地坪単価：";
+            if (subPStr === "") {
+                valLand.innerText = "建物価格入力待ち";
+                valLand.style.fontSize = "14px";
+            } else {
+                if (latestPrice > 0 && lTsubo > 0) {
+                    let unitPrice = (latestPrice - subP) / lTsubo;
+                    valLand.innerText = unitPrice.toLocaleString(undefined, {maximumFractionDigits: 1}) + " 万円";
+                    valLand.style.fontSize = "16px";
+                } else {
+                    valLand.innerText = "- 万円";
+                    valLand.style.fontSize = "16px";
+                }
+            }
+        } else if (patternB.includes(type)) {
+            buildPriceInput.style.display = "none";
+            labelLand.innerText = "土地坪単価：";
+            if (latestPrice > 0 && lTsubo > 0) {
+                let unitPrice = latestPrice / lTsubo;
+                valLand.innerText = unitPrice.toLocaleString(undefined, {maximumFractionDigits: 1}) + " 万円";
+                valLand.style.fontSize = "16px";
+            } else {
+                valLand.innerText = "- 万円";
+                valLand.style.fontSize = "16px";
+            }
+        } else if (patternC.includes(type)) {
+            buildPriceInput.style.display = "none";
+            labelLand.innerText = "MS床単価：";
+            if (latestPrice > 0 && bTsubo > 0) {
+                let unitPrice = latestPrice / bTsubo;
+                valLand.innerText = unitPrice.toLocaleString(undefined, {maximumFractionDigits: 1}) + " 万円";
+                valLand.style.fontSize = "16px";
+            } else {
+                valLand.innerText = "- 万円";
+                valLand.style.fontSize = "16px";
+            }
+        } else {
+            buildPriceInput.style.display = "none";
+            labelLand.innerText = "土地/MS単価：";
+            valLand.innerText = "- 万円";
+            valLand.style.fontSize = "16px";
         }
       }
 
@@ -1097,10 +1140,10 @@
           else return ""; 
       }
 
+      // ★修正: パネルを閉じない設定
       window.submitForm = async () => {
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
-        
         isSaving = true;
         document.getElementById("saving-overlay").style.display = "flex";
 
@@ -1114,19 +1157,18 @@
             });
 
             const res = await fetch(GAS_URL, { 
-                method: "POST", 
-                headers: { "Content-Type": "text/plain" }, 
+                method: "POST", headers: { "Content-Type": "text/plain" }, 
                 body: JSON.stringify({ mode: "save_multiple", reqUser: getUser(), password: getPass(), data: payload }) 
             });
             const result = await res.json();
             if(result.error) throw new Error(result.error);
             
             await fetchMapData(); 
-            
+            // switchToView(); は削除し、アラートのみ表示
             alert("保存が完了しました。");
         } catch (e) { 
             if(e.message.includes("パスワードが正しくありません")) forceLogout();
-            else alert("保存失敗: " + e.message + "\n\n※GAS（スプレッドシート）側に「注目継続」の列が存在しないか、エラーが発生している可能性が高いです。"); 
+            else alert("保存失敗: " + e.message); 
         } finally {
             isSaving = false;
             document.getElementById("saving-overlay").style.display = "none";
@@ -1145,7 +1187,6 @@
 
       window.deleteProperty = async () => {
           if(!confirm("この区画/タブを削除しますか？")) return;
-
           let shouldTrashFolder = false;
           const driveUrl = currentTabs[activeTabIndex].data.drive_url; 
           
@@ -1156,20 +1197,14 @@
           }
 
           const btn = document.getElementById("delete-btn"); btn.innerText = "削除中..."; btn.disabled = true;
-          
           isSaving = true;
           document.getElementById("saving-overlay").style.display = "flex";
 
           try {
               const res = await fetch(GAS_URL, { 
-                  method: "POST", 
-                  headers: { "Content-Type": "text/plain" }, 
+                  method: "POST", headers: { "Content-Type": "text/plain" }, 
                   body: JSON.stringify({
-                      id: document.getElementById("form-id").value, 
-                      mode: "delete",
-                      trashFolder: shouldTrashFolder,
-                      reqUser: getUser(),
-                      password: getPass()
+                      id: document.getElementById("form-id").value, mode: "delete", trashFolder: shouldTrashFolder, reqUser: getUser(), password: getPass()
                   }) 
               });
               const result = await res.json();
@@ -1188,8 +1223,7 @@
       async function fetchMapData() {
         try {
             const res = await fetch(GAS_URL, { 
-                method: "POST", 
-                headers: { "Content-Type": "text/plain" }, 
+                method: "POST", headers: { "Content-Type": "text/plain" }, 
                 body: JSON.stringify({ mode: "get_all", reqUser: getUser(), password: getPass() }) 
             }); 
             const result = await res.json();
@@ -1212,7 +1246,6 @@
         const groups = {};
         allData.forEach(row => {
             if (!row["緯度"] || !row["経度"]) return;
-            
             const isAtt = (row["注目継続"] === true || row["注目継続"] === "TRUE");
             if (onlyAtt && !isAtt) return;
 
@@ -1223,24 +1256,14 @@
                 isVisible = activeFilters.includes("SOLD");
             } else {
                 const t = row["物件種別"] || "";
-                
-                if (t.includes("情開")) {
-                    isVisible = activeFilters.includes("自社（情開）");
-                } else if (t.includes("自社")) {
-                    isVisible = activeFilters.includes("自社物件");
-                } else if (t.includes("MS")) {
-                    isVisible = activeFilters.includes("MS");
-                } else if (t.includes("査定")) {
-                    isVisible = activeFilters.includes("査定");
-                } else if (t === "新築戸建") {
-                    isVisible = activeFilters.includes("新築戸建");
-                } else if (t === "中古戸建") {
-                    isVisible = activeFilters.includes("中古戸建");
-                } else if (t === "売地") {
-                    isVisible = activeFilters.includes("売地");
-                } else {
-                    isVisible = true;
-                }
+                if (t.includes("情開")) isVisible = activeFilters.includes("自社（情開）");
+                else if (t.includes("自社")) isVisible = activeFilters.includes("自社物件");
+                else if (t.includes("MS")) isVisible = activeFilters.includes("MS");
+                else if (t.includes("査定")) isVisible = activeFilters.includes("査定");
+                else if (t === "新築戸建") isVisible = activeFilters.includes("新築戸建");
+                else if (t === "中古戸建") isVisible = activeFilters.includes("中古戸建");
+                else if (t === "売地") isVisible = activeFilters.includes("売地");
+                else isVisible = true;
             }
 
             if (!isVisible) return;
@@ -1279,9 +1302,11 @@
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: div });
             marker.rowIds = ids;
             
+            // ★修正: ドラッグ操作の直後はクリック判定を無視する
             div.addEventListener("click", (e) => {
                 e.stopPropagation(); 
-                if(!isSaving) openView(marker.rowIds, marker);
+                if(isSaving || isDragging || dragLock) return; 
+                openView(marker.rowIds, marker);
             });
 
             div.addEventListener("dblclick", (e) => {
@@ -1340,7 +1365,13 @@
         container.addEventListener('focus', (e) => {
             if(e.target.classList.contains('comma-input') || e.target.classList.contains('area-input')) e.target.value = removeComma(e.target.value);
         }, true);
-        document.getElementById('form-type').addEventListener('change', updateAutoFields);
+        
+        // ★修正: 価格や面積の変更時にも単価計算ロジック（updateAutoFields）を即時反映させる
+        const autoFieldTriggers = ['form-type', 'form-p-first', 'form-p-c1', 'form-p-c2', 'form-p-c3', 'form-p-s', 'form-sub-price', 'form-t-tsubo', 'form-b-tsubo', 'siire-price', 'siire-m2'];
+        autoFieldTriggers.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) { el.addEventListener('input', updateAutoFields); el.addEventListener('change', updateAutoFields); }
+        });
         
         const syncArea = (m2Id, tsuboId) => {
             const el = document.getElementById(m2Id);
@@ -1348,6 +1379,7 @@
                 const v = removeComma(e.target.value);
                 if(v) document.getElementById(tsuboId).value = formatAreaStrict((Math.floor((v * 0.3025) * 100) / 100).toFixed(2));
                 else document.getElementById(tsuboId).value = "";
+                updateAutoFields();
             });}
         };
         syncArea('form-t-m2', 'form-t-tsubo'); syncArea('form-b-m2', 'form-b-tsubo'); syncArea('siire-m2', 'siire-tsubo');
