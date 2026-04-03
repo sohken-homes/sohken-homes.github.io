@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.13</title>
+    <title>不動産管理マップ v5.0.14</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -111,7 +111,6 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
         }
 
-        /* 注目ONのアニメーションなしの静的な丸印 */
         .attention-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; border: 3px solid rgba(0, 123, 255, 0.8); border-radius: 50%; pointer-events: none; }
         
         #saving-overlay {
@@ -646,15 +645,12 @@
           document.getElementById("view-panel").style.setProperty("display", "none", "important"); 
       };
 
-      // 注目ON/OFF切り替え時に無条件で保存するよう修正
       window.toggleAttention = () => {
           if (!currentTabs[activeTabIndex] || !currentTabs[activeTabIndex].data) return;
           const d = currentTabs[activeTabIndex].data;
           d.is_att = !d.is_att;
           document.getElementById('form-is-att').checked = d.is_att;
           updateAttButtonUI(d.is_att);
-          
-          // モードに関わらずスプレッドシートに即時保存
           touchUpdate(true);
       };
 
@@ -668,10 +664,9 @@
           });
       }
 
-      // 成功時のアラート（ポップアップ）を削除
       window.touchUpdate = async (silent = false) => {
           const id = currentTabs[activeTabIndex].data.id;
-          if(!id) return; // 新規データでIDしかない（スプレッドシートに未保存）場合はスキップ
+          if(!id) return;
           document.getElementById("saving-overlay").style.display = "flex";
           try {
               const isAtt = currentTabs[activeTabIndex].data.is_att;
@@ -680,7 +675,6 @@
                   body: JSON.stringify({ mode: "touch_update", reqUser: getUser(), password: getPass(), data: [{id: id, is_att: isAtt}] }) 
               });
               await fetchMapData();
-              // 成功時はアラートを出さない
           } catch(e) {
               if(e.message && e.message.includes("パスワード")) forceLogout();
               else if(!silent) alert("エラーが発生しました: " + e.message);
@@ -719,6 +713,40 @@
           let raw = val.toString().replace(/,/g, "");
           if (isNaN(raw) || raw === "") return val;
           const parts = raw.split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
+      }
+
+      // ★追加: 閲覧モードでファイルを非同期取得する関数
+      async function fetchViewFiles(data, containerId) {
+          const el = document.getElementById(containerId);
+          if (!el) return;
+          try {
+              let typeStr = data.type || "種別未定";
+              let nameStr = data.name || "名称未定";
+              let folderName = `view-${typeStr}-${nameStr}`.replace(/[\\/:*?"<>|]/g, '_'); 
+
+              const res = await fetch(GAS_URL, { 
+                  method: "POST", headers: { "Content-Type": "text/plain" }, 
+                  body: JSON.stringify({ mode: "get_files", reqUser: getUser(), password: getPass(), addr1: data.addr1 || "", folderName: folderName, groupId: data.id }) 
+              });
+              const result = await res.json();
+              if (result.error) throw new Error(result.error);
+              
+              if (result.files.length === 0) { 
+                  el.innerHTML = "<div style='color:#999; text-align:center; font-size:12px;'>ファイルはまだありません</div>"; 
+                  return; 
+              }
+              
+              let html = "<div style='display:flex; flex-direction:column; gap:6px;'>";
+              result.files.forEach(f => {
+                  html += `<a href="${f.url}" target="_blank" style="display:block; padding:8px 12px; background:#fff; border:1px solid #ddd; border-radius:6px; color:#1a73e8; text-decoration:none; font-weight:bold; font-size:13px; word-break:break-all; box-shadow:0 1px 2px rgba(0,0,0,0.05);">📎 ${f.name}</a>`;
+              });
+              html += "</div>";
+              
+              el.innerHTML = html;
+          } catch (err) { 
+              if(err.message.includes("パスワード")) forceLogout();
+              else el.innerHTML = `<div style='color:red; text-align:center; font-size:12px;'>ファイルの読み込みに失敗しました</div>`; 
+          }
       }
 
       function loadViewData(data) {
@@ -821,9 +849,12 @@
           html += vItem("入力担当", data.user);
           html += `</div>`;
 
-          if (data.drive_url) {
-              html += `<a href="${data.drive_url}" target="_blank" class="btn-drive-link">📁 この物件の図面・写真を見る<br><span style="font-size:10px; font-weight:normal;">(Googleドライブを開く)</span></a>`;
-          }
+          // ★変更: ドライブ全体を開くボタンから、個別のファイルリスト表示に変更
+          let fileAreaId = "view-file-list-" + data.id;
+          html += `<div class="section-title">添付ファイル</div>
+                   <div id="${fileAreaId}" style="background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e8eaed;">
+                       ${data.drive_url ? `<div style="color:#666; text-align:center; font-size:12px;">ファイルを読み込み中...</div>` : `<div style='color:#999; text-align:center; font-size:12px;'>ファイルはまだありません</div>`}
+                   </div>`;
 
           if (data.siire_p || data.siire_m2) {
               html += `<div class="section-title">仕入分析</div><div class="view-grid">`;
@@ -840,6 +871,11 @@
           }
 
           container.innerHTML = html;
+
+          // ★追加: フォルダURLが存在する場合はファイルを検索してリストを表示する
+          if (data.drive_url) {
+              fetchViewFiles(data, fileAreaId);
+          }
       }
 
       function renderTabs() {
@@ -1136,7 +1172,6 @@
           else return ""; 
       }
 
-      // 成功時のアラート（ポップアップ）を削除
       window.submitForm = async () => {
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
@@ -1160,7 +1195,6 @@
             if(result.error) throw new Error(result.error);
             
             await fetchMapData(); 
-            // 成功時はアラートを出さない
         } catch (e) { 
             if(e.message.includes("パスワードが正しくありません")) forceLogout();
             else alert("保存失敗: " + e.message); 
