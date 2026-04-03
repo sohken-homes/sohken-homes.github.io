@@ -126,10 +126,10 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h2>創建ホームズ不動産管理マップ</h2>
+            <h2>不動産管理マップ</h2>
             <div class="input-group">
                 <label>入力者名（漢字・かな）</label>
-                <input type="text" id="user-name" placeholder="苗字または氏名">
+                <input type="text" id="user-name" placeholder="例：山田 太郎">
             </div>
             <div class="input-group">
                 <label>共通パスワード</label>
@@ -165,7 +165,7 @@
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="査定" checked> 査定依頼</label>
             <hr style="width:100%; margin:4px 0; border:none; border-top:1px solid #ddd;">
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="SOLD" checked> 成約済</label>
-            <label class="filter-item" style="color:#007bff; font-weight:bold; margin-top:2px;"><input type="checkbox" id="layer-att"> ★ 注目物件のみ表示</label>
+            <label class="filter-item" style="color:#007bff; font-weight:bold; margin-top:2px;"><input type="checkbox" id="layer-att"> ★ 注目継続のみ表示</label>
         </div>
 
         <div id="view-panel" class="side-panel">
@@ -448,7 +448,7 @@
           "自社売地(情開)": "https://sohken-homes.github.io/icon_jisha_land_info.png", "自社中古MS(情開)": "https://sohken-homes.github.io/icon_jisha_ms_info.png",
           "新築MS": "https://sohken-homes.github.io/icon_new_ms.png", "中古MS": "https://sohken-homes.github.io/icon_used_ms.png",
           "査定依頼": "https://sohken-homes.github.io/icon_satei_land.png", "査定依頼MS": "https://sohken-homes.github.io/icon_satei_ms.png",
-          "SOLD": "https://sohken-homes.github.io/sold_house.png", "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
+          "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
       };
 
       let map, geocoder, allData = [], currentEditingMarker = null, markersList = [];
@@ -543,7 +543,6 @@
           });
       }
 
-      // ★修正: ドラッグ直後に誤ってクリック判定されないようドラッグロックの解除を遅延
       window.addNewProperty = (lat, lng) => {
         closePanel();
         const img = document.createElement("img"); img.src = ICON_MAP["DEFAULT"]; img.style.width = "32px"; img.style.cursor = "pointer";
@@ -558,7 +557,6 @@
         marker.addListener('dragend', (e) => {
             currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
             fetchAddress(e.latLng.lat(), e.latLng.lng());
-            // ドラッグ終了後、少し時間をあけてからクリック判定のロックを解除する
             setTimeout(() => { isDragging = false; dragLock = false; }, 300);
         });
         
@@ -606,7 +604,6 @@
           updateAttButtonUI(currentTabs[0].data.is_att);
       };
 
-      // ★修正: 既存マーカー編集モード移行時もドラッグロックを強化
       window.switchToEdit = () => {
           document.getElementById("view-panel").style.setProperty("display", "none", "important");
           if(currentEditingMarker) {
@@ -722,7 +719,6 @@
           const parts = raw.split("."); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join(".");
       }
 
-      // ★修正: 最新価格を正しく取得して、3パターンの単価を計算するロジック（閲覧モード用）
       function loadViewData(data) {
           const container = document.getElementById("view-container");
           let prices = [];
@@ -965,7 +961,7 @@
                   refreshFileList();
               } catch (err) { 
                   if(err.message.includes("パスワードが正しくありません")) forceLogout();
-                  else { alert("アップロード失敗: " + err.message + "\n※GAS側にファイル処理プログラムが不足しています。"); refreshFileList(); }
+                  else { alert("アップロード失敗: " + err.message); refreshFileList(); }
               }
           };
           reader.readAsDataURL(file);
@@ -1044,7 +1040,6 @@
           }
       }
 
-      // ★修正: 最新価格から3パターンの条件分岐を用いて単価を計算する処理（編集モード用）
       function updateAutoFields() {
         const type = document.getElementById('form-type').value || "";
         
@@ -1055,7 +1050,6 @@
         const pC1 = getVal('form-p-c1');
         const pFirst = getVal('form-p-first');
         
-        // 成約価格 ＞ 価格3 ＞ 価格2 ＞ 価格1 ＞ 初回価格 の優先順で最新価格を特定
         let latestPrice = pS > 0 ? pS : (pC3 > 0 ? pC3 : (pC2 > 0 ? pC2 : (pC1 > 0 ? pC1 : pFirst)));
 
         const subPStr = removeComma(document.getElementById('form-sub-price').value);
@@ -1140,7 +1134,6 @@
           else return ""; 
       }
 
-      // ★修正: パネルを閉じない設定
       window.submitForm = async () => {
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
@@ -1164,7 +1157,6 @@
             if(result.error) throw new Error(result.error);
             
             await fetchMapData(); 
-            // switchToView(); は削除し、アラートのみ表示
             alert("保存が完了しました。");
         } catch (e) { 
             if(e.message.includes("パスワードが正しくありません")) forceLogout();
@@ -1276,6 +1268,7 @@
         markersList = Object.keys(groups).map(key => {
             const rows = groups[key]; const first = rows[0]; const ids = rows.map(r => r["ID"]).join(",");
             const img = document.createElement("img");
+            
             if (rows.length > 1) {
                 const allSold = rows.every(r => r["成約フラグ"] === true || r["成約フラグ"] === "TRUE");
                 const hasJishaNew = rows.some(r => r["物件種別"] === "自社新築");
@@ -1284,7 +1277,28 @@
                 else if (hasJishaNew) img.src = "https://sohken-homes.github.io/icon_jisha_new_town.png";
                 else if (hasJishaNewInfo) img.src = "https://sohken-homes.github.io/icon_jisha_new_info_town.png";
                 else img.src = "https://sohken-homes.github.io/icon_new_house_town.png";
-            } else { img.src = (first["成約フラグ"] === true || first["成約フラグ"] === "TRUE") ? ICON_MAP["SOLD"] : (ICON_MAP[first["物件種別"]] || ICON_MAP["DEFAULT"]); }
+            } else { 
+                const isSold = (first["成約フラグ"] === true || first["成約フラグ"] === "TRUE");
+                const pType = first["物件種別"] || "";
+                
+                // ★修正: 単独物件の成約時、種別ごとにアイコンを出し分ける
+                if (isSold) {
+                    if (["新築MS", "中古MS", "自社中古MS(情開)"].includes(pType)) {
+                        img.src = "https://sohken-homes.github.io/sold_ms.png";
+                    } else if (["売地", "自社売地", "自社売地(情開)"].includes(pType)) {
+                        img.src = "https://sohken-homes.github.io/sold_land.png";
+                    } else if (pType === "査定依頼") {
+                        img.src = "https://sohken-homes.github.io/sold_satei.png";
+                    } else if (pType === "査定依頼MS") {
+                        img.src = "https://sohken-homes.github.io/sold_satei_ms.png";
+                    } else {
+                        // 新築戸建、中古戸建、自社新築などの戸建系デフォルト
+                        img.src = "https://sohken-homes.github.io/sold_house.png"; 
+                    }
+                } else {
+                    img.src = ICON_MAP[pType] || ICON_MAP["DEFAULT"];
+                }
+            }
             img.style.width = "32px"; img.style.cursor = "pointer";
             
             const div = document.createElement("div");
@@ -1302,7 +1316,6 @@
             const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: div });
             marker.rowIds = ids;
             
-            // ★修正: ドラッグ操作の直後はクリック判定を無視する
             div.addEventListener("click", (e) => {
                 e.stopPropagation(); 
                 if(isSaving || isDragging || dragLock) return; 
@@ -1366,7 +1379,6 @@
             if(e.target.classList.contains('comma-input') || e.target.classList.contains('area-input')) e.target.value = removeComma(e.target.value);
         }, true);
         
-        // ★修正: 価格や面積の変更時にも単価計算ロジック（updateAutoFields）を即時反映させる
         const autoFieldTriggers = ['form-type', 'form-p-first', 'form-p-c1', 'form-p-c2', 'form-p-c3', 'form-p-s', 'form-sub-price', 'form-t-tsubo', 'form-b-tsubo', 'siire-price', 'siire-m2'];
         autoFieldTriggers.forEach(id => {
             const el = document.getElementById(id);
