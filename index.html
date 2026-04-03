@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.9 (機能・デザイン修正版)</title>
+    <title>不動産管理マップ v5.0.10</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -350,7 +350,7 @@
                     <div class="siire-unit-box" style="margin-top:10px;"><label style="font-size:11px; color:#52c41a;">仕入坪単価：</label><span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span></div>
                 </div>
 
-                <button class="btn-save" onclick="submitForm()">保存して閉じる</button>
+                <button class="btn-save" onclick="submitForm()">保存</button>
                 <button class="btn-cancel" onclick="switchToView()">キャンセルして戻る</button>
                 <button class="btn-delete" id="delete-btn" onclick="deleteProperty()" style="display:none;">この区画を削除する</button>
             </div>
@@ -361,8 +361,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      // ★修正：正しいGAS_URLに戻しました
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbzczn5WtaFm4Buk2ZlD0ehYUo1GhXGgyrZ8BtzulDPh19nZI-ysxcPhLp5zjq5tQ3rz/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwS41wZa5Wb2nBH5TzWY23aP-aw6OMyEY6x8zW_elTW1hadZgqgVLUoeRG8xNkKv6t-/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -397,6 +396,7 @@
           try {
               const res = await fetch(GAS_URL, {
                   method: "POST",
+                  headers: { "Content-Type": "text/plain" },
                   body: JSON.stringify({ mode: "login", reqUser: nameInput, password: passInput })
               });
               const result = await res.json();
@@ -448,7 +448,7 @@
           "form-train-line":"train_line", "form-train-station":"train_station", "form-train-walk":"train_walk", "form-train-memo":"train_memo",
           "form-url1":"url1", "form-url2":"url2", "form-memo":"memo", "form-user":"user",
           "siire-price":"siire_p", "siire-m2":"siire_m2", "siire-basis":"siire_basis",
-          "form-is-att":"is_att" // ★追加
+          "form-is-att":"is_att"
       };
 
       const ICON_MAP = {
@@ -512,7 +512,6 @@
             if (isSV && !isSaving) closePanel();
         });
 
-        // ★修正：コントロールの並び順（「地図/航空写真」「ペグマン」）と位置調整
         const offset = setInterval(() => {
             const mtc = document.querySelector('.gm-style-mtc');
             const pegman = document.querySelector('.gm-svpc');
@@ -520,9 +519,7 @@
                 const mtcRoot = mtc.closest('.gmnoprint').parentElement;
                 const pegmanRoot = pegman.closest('.gmnoprint');
                 if (mtcRoot && pegmanRoot && mtcRoot.parentElement === pegmanRoot.parentElement) {
-                    // ペグマンを最後尾に移動させて並び順を調整
                     mtcRoot.parentElement.appendChild(pegmanRoot);
-                    // 検索窓と左端をピタリと揃える
                     mtcRoot.parentElement.style.left = "10px";
                     mtcRoot.parentElement.style.top = "10px";
                     clearInterval(offset);
@@ -618,7 +615,7 @@
                   "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
                   "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis",
                   "ドライブURL":"drive_url", "マップURL":"map_url",
-                  "注目継続":"is_att" // ★追加
+                  "注目継続":"is_att"
               };
               Object.keys(sheetToKey).forEach(s => { if (r[s] !== undefined) data[sheetToKey[s]] = r[s]; });
               data.is_att = (data.is_att === true || data.is_att === "TRUE");
@@ -682,7 +679,6 @@
           document.getElementById("view-panel").style.setProperty("display", "none", "important"); 
       };
 
-      // ★追加：注目ボタンのON/OFFロジック
       window.toggleAttention = () => {
           if (!currentTabs[activeTabIndex] || !currentTabs[activeTabIndex].data) return;
           const d = currentTabs[activeTabIndex].data;
@@ -705,7 +701,6 @@
           });
       }
 
-      // ★追加：変更なし（更新日のみ記録）ロジック
       window.touchUpdate = async (silent = false) => {
           const id = currentTabs[activeTabIndex].data.id;
           if(!id) return;
@@ -714,6 +709,7 @@
               const isAtt = currentTabs[activeTabIndex].data.is_att;
               await fetch(GAS_URL, { 
                   method:"POST", 
+                  headers: { "Content-Type": "text/plain" },
                   body: JSON.stringify({ 
                       mode: "touch_update", 
                       reqUser: getUser(), 
@@ -725,7 +721,7 @@
               if(!silent) alert("更新日を記録しました");
           } catch(e) {
               if(e.message && e.message.includes("パスワード")) forceLogout();
-              else if(!silent) alert("エラーが発生しました: " + e.message);
+              else if(!silent) alert("エラーが発生しました: " + e.message + "\n※GAS側に「注目継続」の列がない可能性があります。");
           } finally { 
               document.getElementById("saving-overlay").style.display = "none"; 
           }
@@ -977,6 +973,7 @@
               try {
                   const res = await fetch(GAS_URL, {
                       method: "POST",
+                      headers: { "Content-Type": "text/plain" },
                       body: JSON.stringify({ mode: "upload_file", reqUser: getUser(), password: getPass(), addr1, folderName, groupId, filename: file.name, data: e.target.result })
                   });
                   const result = await res.json();
@@ -984,7 +981,7 @@
                   refreshFileList();
               } catch (err) { 
                   if(err.message.includes("パスワードが正しくありません")) forceLogout();
-                  else { alert("アップロード失敗: " + err.message); refreshFileList(); }
+                  else { alert("アップロード失敗: " + err.message + "\n※通信エラーか、GAS側で問題が発生しています。"); refreshFileList(); }
               }
           };
           reader.readAsDataURL(file);
@@ -999,7 +996,11 @@
           
           listEl.innerHTML = "<div style='color:#666; text-align:center;'>ファイル一覧を取得中...</div>";
           try {
-              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "get_files", reqUser: getUser(), password: getPass(), addr1, folderName, groupId }) });
+              const res = await fetch(GAS_URL, { 
+                  method: "POST", 
+                  headers: { "Content-Type": "text/plain" }, 
+                  body: JSON.stringify({ mode: "get_files", reqUser: getUser(), password: getPass(), addr1, folderName, groupId }) 
+              });
               const result = await res.json();
               if (result.error) throw new Error(result.error);
               
@@ -1030,7 +1031,11 @@
           if (!newName || newName === oldName) return;
           try {
               document.getElementById('file-list').innerHTML = "<div style='color:#666; text-align:center;'>名前を変更中...</div>";
-              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "rename_file", reqUser: getUser(), password: getPass(), fileId: id, newName: newName }) });
+              const res = await fetch(GAS_URL, { 
+                  method: "POST", 
+                  headers: { "Content-Type": "text/plain" }, 
+                  body: JSON.stringify({ mode: "rename_file", reqUser: getUser(), password: getPass(), fileId: id, newName: newName }) 
+              });
               const result = await res.json();
               if (result.error) throw new Error(result.error);
               refreshFileList();
@@ -1044,7 +1049,11 @@
           if (!confirm("本当にこのファイルを削除しますか？\n(Googleドライブのゴミ箱に移動します)")) return;
           try {
               document.getElementById('file-list').innerHTML = "<div style='color:#666; text-align:center;'>削除中...</div>";
-              const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "delete_file", reqUser: getUser(), password: getPass(), fileId: id }) });
+              const res = await fetch(GAS_URL, { 
+                  method: "POST", 
+                  headers: { "Content-Type": "text/plain" }, 
+                  body: JSON.stringify({ mode: "delete_file", reqUser: getUser(), password: getPass(), fileId: id }) 
+              });
               const result = await res.json();
               if (result.error) throw new Error(result.error);
               refreshFileList();
@@ -1100,22 +1109,28 @@
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
                 dataCopy.folderName = fName;
-                dataCopy.map_url = `https://www.google.com/maps?q=${dataCopy.lat},${dataCopy.lng}`;
+                dataCopy.map_url = `http://maps.google.com/maps?q=${dataCopy.lat},${dataCopy.lng}`;
                 return dataCopy;
             });
 
-            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ mode: "save_multiple", reqUser: getUser(), password: getPass(), data: payload }) });
+            const res = await fetch(GAS_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain" }, 
+                body: JSON.stringify({ mode: "save_multiple", reqUser: getUser(), password: getPass(), data: payload }) 
+            });
             const result = await res.json();
             if(result.error) throw new Error(result.error);
+            
             await fetchMapData(); 
-            switchToView();
+            
+            alert("保存が完了しました。");
         } catch (e) { 
             if(e.message.includes("パスワードが正しくありません")) forceLogout();
-            else alert("保存失敗: " + e.message); 
+            else alert("保存失敗: " + e.message + "\n\n※GAS（スプレッドシート）側に「注目継続」の列が存在しないか、エラーが発生している可能性が高いです。"); 
         } finally {
             isSaving = false;
             document.getElementById("saving-overlay").style.display = "none";
-            btn.disabled = false; btn.innerText = "保存して閉じる"; 
+            btn.disabled = false; btn.innerText = "保存"; 
         }
       };
 
@@ -1148,6 +1163,7 @@
           try {
               const res = await fetch(GAS_URL, { 
                   method: "POST", 
+                  headers: { "Content-Type": "text/plain" }, 
                   body: JSON.stringify({
                       id: document.getElementById("form-id").value, 
                       mode: "delete",
@@ -1173,6 +1189,7 @@
         try {
             const res = await fetch(GAS_URL, { 
                 method: "POST", 
+                headers: { "Content-Type": "text/plain" }, 
                 body: JSON.stringify({ mode: "get_all", reqUser: getUser(), password: getPass() }) 
             }); 
             const result = await res.json();
