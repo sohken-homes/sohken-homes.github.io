@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>創建ホームズ不動産管理マップ v5.0.4</title>
+    <title>創建ホームズ不動産管理マップ v5.0.5</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -10,71 +10,72 @@
         /* ログイン画面 */
         #login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; background: #f0f2f5; position: fixed; top: 0; left: 0; z-index: 10000; }
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        .login-box h2 { color: #1a73e8; margin-top: 0; margin-bottom: 30px; font-size: 20px;}
+        .login-box h2 { color: #1a73e8; margin-top: 0; margin-bottom: 20px; font-size: 20px;}
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; font-size: 13px; color: #5f6368; margin-bottom: 5px; font-weight: bold; }
         .input-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; }
         .btn-login { background: #1a73e8; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #login-error-msg { color: #d93025; font-size: 13px; margin-top: 15px; font-weight: bold; display: none; }
 
         /* メインアプリ */
         #main-app { display: none; height: 100%; width: 100%; position: relative; }
         #map { height: 100vh; width: 100%; }
         
-        /* 検索ボックス */
-        #search-box-container { position: absolute; top: 60px; left: 10px; z-index: 5; display: flex; gap: 5px; align-items: center; }
-        #address-input { width: 220px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
+        #search-box-container { position: absolute; top: 70px; left: 10px; z-index: 5; display: flex; gap: 5px; align-items: center; }
+        #address-input { width: 200px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
         #search-btn { padding: 10px 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: bold; }
         
-        /* フィルタパネル */
-        #filter-panel { position: absolute; top: 115px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+        #filter-panel { position: absolute; top: 125px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
         .filter-item { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #333; }
 
-        /* パネル共通（右側） */
-        .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; flex-direction: column; }
-        .panel-header { padding: 15px 20px 10px 20px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-        .panel-header h3 { margin: 0; font-size: 16px; color: #1a73e8; }
-        .header-actions { display: flex; gap: 6px; align-items: center; }
-
-        .tab-container { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; background: #f8f9fa; }
-        .tab { padding: 8px 12px; cursor: pointer; font-size: 12px; color: #5f6368; white-space: nowrap; border-radius: 6px 6px 0 0; margin-top: 5px; border: 1px solid transparent; }
-        .tab.active { font-weight: bold; background: white; color: #1a73e8; border: 1px solid #ddd; border-bottom: none; }
-        .tab-add { color: #188038; font-weight: bold; background: #e6f4ea; border-radius: 6px; margin: 5px; padding: 5px 10px; }
-
-        .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; }
-        .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; border-left: 4px solid #1a73e8; }
+        /* パネル（以前のリッチなスタイルを復元） */
+        .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; flex-direction: column; }
+        .panel-header { padding: 15px 20px 10px 20px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+        .header-actions { display: flex; gap: 4px; align-items: center; }
         
-        .btn-action { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
+        /* ボタンデザインの統一 */
+        .btn-action { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
         .btn-action:hover { background: #f1f6ff; }
-        .btn-close { background: #f1f3f4; border: none; color: #5f6368; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-att-off { background: #f1f3f4; color: #5f6368; border: 1px solid #ccc; }
+        .btn-att-on { background: #e8f0fe; color: #1a73e8; border: 2px solid #1a73e8; }
 
-        /* 注目継続の輪アニメーション */
-        .attention-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; border: 4px solid rgba(0, 123, 255, 0.6); border-radius: 50%; pointer-events: none; animation: att-pulse 2s infinite; }
-        @keyframes att-pulse { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
+        .tab-container { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; }
+        .tab { padding: 6px 12px; cursor: pointer; font-size: 12px; color: #5f6368; white-space: nowrap; border-radius: 6px 6px 0 0; margin-top: 5px; }
+        .tab.active { font-weight: bold; position: relative; top: 1px; }
 
-        /* フォーム要素 */
+        .panel-body { padding: 15px 20px; overflow-y: auto; flex: 1; scroll-behavior: smooth; }
+        .section-title { font-size: 12px; font-weight: bold; color: #1a73e8; margin: 15px 0 8px 0; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; }
+        
+        /* 閲覧パネル専用 */
+        #view-panel { background: white; }
+        #view-panel .tab-container { background: #f1f3f4; }
+        #view-panel .tab.active { background: white; border: 1px solid #ddd; border-bottom: none; color: #1a73e8; }
+        .view-price-box { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
+        .view-latest-price { font-size: 28px; font-weight: bold; color: #cf1322; line-height: 1; }
+        .view-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+        .view-item { background: #f8f9fa; padding: 8px 10px; border-radius: 6px; border: 1px solid #e8eaed; }
+        .view-item span { display: block; font-size: 10px; color: #80868b; margin-bottom: 2px; }
+        .view-item div { color: #202124; font-weight: bold; word-break: break-all; }
+
+        /* 編集パネル専用 */
+        #editor-panel { background: #e3f2fd; }
+        #editor-panel .tab-container { background: #bbdefb; }
+        #editor-panel .tab.active { background: white; color: #1565c0; border: 1px solid #90caf9; border-bottom: none; }
+        #editor-panel .panel-body { background: white; }
+
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; font-weight: bold; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 13px; outline: none; }
-        .form-group input:focus { border-color: #1a73e8; }
-        .flex-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: white; }
+        .flex-row { display: flex; gap: 8px; align-items: flex-end; }
         .flex-item { flex: 1; }
         
-        .btn-save-main { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px; box-shadow: 0 4px 6px rgba(26,115,232,0.2); }
-        .btn-delete { color: #d93025; background: #fff; border: 1px solid #d93025; padding: 8px; width: 100%; border-radius: 6px; margin-top: 25px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        
-        .view-item { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; border-left: 3px solid #ddd; }
-        .view-item span { font-size: 10px; color: #888; display: block; margin-bottom: 2px; }
+        .btn-save-main { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
+        .btn-delete { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; font-size: 11px; }
 
-        /* ファイルアップロード部分 */
-        .file-list { margin-top: 10px; border: 1px solid #eee; border-radius: 8px; background: #fafafa; }
-        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 12px; }
-        .file-item:last-child { border-bottom: none; }
-        .file-name { color: #1a73e8; text-decoration: none; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
-        
-        #saving-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.8); z-index: 9999; justify-content: center; align-items: center; font-weight: bold; color: #1a73e8; flex-direction: column; gap: 10px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 注目パルス */
+        .attention-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px; border: 4px solid rgba(0, 123, 255, 0.7); border-radius: 50%; pointer-events: none; animation: att-pulse 2s infinite; }
+        @keyframes att-pulse { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
+
+        #saving-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.7); z-index: 9999; justify-content: center; align-items: center; font-weight: bold; color: #1a73e8; flex-direction: column; }
     </style>
 </head>
 <body>
@@ -90,21 +91,21 @@
                 <label>共通パスワード</label>
                 <input type="password" id="user-pass" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') doLogin()">
             </div>
-            <button class="btn-login" id="login-btn" onclick="doLogin()">ログイン</button>
+            <button class="btn-login" id="login-btn" onclick="doLogin()">システムにログイン</button>
             <div id="login-error-msg"></div>
         </div>
     </div>
 
     <div id="main-app">
-        <div id="saving-overlay"><div class="spinner"></div><span>処理中...</span></div>
+        <div id="saving-overlay">⏳ 処理中です。しばらくお待ちください...</div>
 
         <div id="search-box-container">
-            <input type="text" id="address-input" placeholder="住所・キーワード検索">
+            <input type="text" id="address-input" placeholder="住所で新規登録">
             <button id="search-btn" onclick="executeSearch()">検索</button>
         </div>
 
         <div id="filter-panel">
-            <div style="font-weight:bold; color:#1a73e8; font-size:12px; margin-bottom:5px;">表示レイヤ</div>
+            <div style="color:#1a73e8; font-weight:bold; margin-bottom:4px; font-size:12px;">■ 表示レイヤ</div>
             <label class="filter-item"><input type="checkbox" id="layer-all" checked> 全て表示</label>
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="新築戸建" checked> 新築戸建</label>
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="中古戸建" checked> 中古戸建</label>
@@ -114,15 +115,16 @@
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="査定" checked> 査定依頼</label>
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="SOLD" checked> 成約済</label>
             <hr style="width:100%; border:none; border-top:1px solid #ddd;">
-            <label class="filter-item" style="color:#007bff; font-weight:bold;"><input type="checkbox" id="layer-att" checked> 注目継続のみ表示</label>
+            <label class="filter-item" style="color:#007bff; font-weight:bold;"><input type="checkbox" id="layer-att" checked> ★ 注目継続のみ表示</label>
         </div>
 
         <div id="view-panel" class="side-panel">
             <div class="panel-header">
                 <h3>🏠 物件詳細</h3>
                 <div class="header-actions">
+                    <button id="view-att-btn" class="btn-action" onclick="toggleAttention()">★ 注目</button>
                     <button class="btn-action" onclick="touchUpdate()">変更なし</button>
-                    <button class="btn-action" onclick="switchToEdit()">編集</button>
+                    <button class="btn-action" onclick="switchToEdit()">✏️ 編集</button>
                     <button class="btn-close" onclick="closePanel()">✖</button>
                 </div>
             </div>
@@ -132,10 +134,11 @@
 
         <div id="editor-panel" class="side-panel">
             <div class="panel-header">
-                <h3>✏️ 物件登録・編集</h3>
+                <h3 style="color:#1565c0;">✏️ 物件登録・編集</h3>
                 <div class="header-actions">
+                    <button id="edit-att-btn" class="btn-action" onclick="toggleAttention()">★ 注目</button>
                     <button class="btn-action" onclick="touchUpdate()">変更なし</button>
-                    <button class="btn-action" onclick="switchToView()">閲覧</button>
+                    <button class="btn-action" onclick="switchToView()">👁️ 閲覧</button>
                     <button class="btn-close" onclick="closePanel()">✖</button>
                 </div>
             </div>
@@ -143,62 +146,52 @@
             <div class="panel-body" id="form-container">
                 <input type="hidden" id="form-id">
                 <input type="hidden" id="form-lat"><input type="hidden" id="form-lng">
-                
-                <div style="background:#eef6ff; padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid #cce0ff;">
-                    <label style="font-weight:bold; color:#0056b3; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" id="form-is-att" style="width:20px; height:20px;"> ★ 注目継続物件としてマーク
-                    </label>
-                </div>
-
-                <div class="section-title">基本情報</div>
+                <input type="checkbox" id="form-is-att" style="display:none;"> <div class="section-title">基本情報</div>
                 <div class="form-group">
                     <div class="flex-row">
-                        <div class="flex-item"><label>種別</label><select id="form-type"><option value="">選択</option><option value="新築戸建">新築戸建</option><option value="中古戸建">中古戸建</option><option value="売地">売地</option><option value="自社物件">自社物件</option><option value="MS">マンション</option><option value="査定">査定依頼</option></select></div>
+                        <div class="flex-item"><label>物件種別</label><select id="form-type"><option value="">選択</option><option value="新築戸建">新築戸建</option><option value="中古戸建">中古戸建</option><option value="売地">売地</option><option value="自社物件">自社物件</option><option value="MS">マンション</option><option value="査定">査定依頼</option></select></div>
                         <div class="flex-item"><label>区画番号</label><input type="text" id="form-tab-name"></div>
                     </div>
                 </div>
-                <div class="form-group"><label>物件名称/業者名</label><input type="text" id="form-name"></div>
-                <div class="flex-row">
-                    <div class="flex-item"><label>市・区</label><input type="text" id="form-addr1"></div>
-                    <div class="flex-item"><label>町名</label><input type="text" id="form-addr2"></div>
-                    <div class="flex-item"><label>丁目以降</label><input type="text" id="form-addr3"></div>
-                </div>
-
-                <div class="section-title">価格情報 (万円)</div>
-                <div class="flex-row">
-                    <div class="flex-item"><label>初回価格</label><input type="text" id="form-p-first"></div>
-                    <div class="flex-item"><label>現在の価格</label><input type="text" id="form-p-current"></div>
-                </div>
-                <div class="flex-row">
-                    <div class="flex-item"><label>価格変更1</label><input type="text" id="form-p-h1"></div>
-                    <div class="flex-item"><label>日付1</label><input type="text" id="form-p-d1" placeholder="MM/DD"></div>
-                </div>
-                <div class="flex-row">
-                    <div class="flex-item"><label>価格変更2</label><input type="text" id="form-p-h2"></div>
-                    <div class="flex-item"><label>日付2</label><input type="text" id="form-p-d2" placeholder="MM/DD"></div>
-                </div>
-                <div class="flex-row">
-                    <div class="flex-item"><label>成約価格</label><input type="text" id="form-p-s"></div>
-                    <div class="sold-inline" style="padding-bottom:5px;"><label style="font-size:12px; font-weight:bold; color:#d93025;"><input type="checkbox" id="form-is-sold"> 成約済</label></div>
-                </div>
-
-                <div class="section-title">土地面積</div>
-                <div class="flex-row">
-                    <div class="flex-item"><label>㎡</label><input type="text" id="form-t-m2"></div>
-                    <div class="flex-item"><label>坪</label><input type="text" id="form-t-tsubo" readonly style="background:#f1f3f4;"></div>
-                </div>
-
-                <div class="section-title">備考・資料</div>
-                <div class="form-group"><label>備考</label><textarea id="form-memo" rows="3"></textarea></div>
-                
+                <div class="form-group"><label>物件名称/売主業者名</label><input type="text" id="form-name"></div>
                 <div class="form-group">
-                    <label>資料アップロード (Google Drive)</label>
-                    <input type="file" id="file-input" multiple style="font-size:11px;">
+                    <label>住所</label>
+                    <div class="flex-row">
+                        <div class="flex-item"><input type="text" id="form-addr1" placeholder="市・区"></div>
+                        <div class="flex-item"><input type="text" id="form-addr2" placeholder="町名"></div>
+                        <div class="flex-item"><input type="text" id="form-addr3" placeholder="丁目以降"></div>
+                    </div>
                 </div>
 
-                <div class="form-group" style="margin-top:20px;"><label>最終入力者</label><input type="text" id="form-user"></div>
+                <div class="section-title">価格推移 (単位: 万円)</div>
+                <div class="form-group">
+                    <div class="flex-row"><div class="flex-item"><label>初回価格</label><input type="text" id="form-p-first" class="comma-input only-num"></div><div class="flex-item"><label>初回入力日</label><input type="text" id="form-d-first" class="date-input"></div></div>
+                    <div class="flex-row"><div class="flex-item"><label>変更1</label><input type="text" id="form-p-c1" class="comma-input only-num"></div><div class="flex-item"><label>変更日1</label><input type="text" id="form-d-c1" class="date-input"></div></div>
+                    <div class="flex-row"><div class="flex-item"><label>変更2</label><input type="text" id="form-p-c2" class="comma-input only-num"></div><div class="flex-item"><label>変更日2</label><input type="text" id="form-d-c2" class="date-input"></div></div>
+                    <div class="flex-row" style="align-items: center; justify-content: space-between;">
+                        <label style="margin:0;">成約情報</label>
+                        <div style="font-size:11px; color:#cf1322; font-weight:bold;"><input type="checkbox" id="form-is-sold"> 成約済</div>
+                    </div>
+                    <div class="flex-row"><div class="flex-item"><label>成約価格</label><input type="text" id="form-p-s" class="comma-input only-num"></div><div class="flex-item"><label>成約日</label><input type="text" id="form-d-s" class="date-input"></div></div>
+                </div>
 
-                <button class="btn-save-main" onclick="submitForm()">この内容で保存する</button>
+                <div class="section-title">面積詳細</div>
+                <div class="form-group">
+                    <label>土地面積 (㎡ / 坪)</label>
+                    <div class="flex-row"><input type="text" id="form-t-m2" class="comma-input only-num flex-item"><span style="font-size:12px;">㎡</span><input type="text" id="form-t-tsubo" class="flex-item" readonly style="background:#f9f9f9;"><span style="font-size:12px;">坪</span></div>
+                </div>
+
+                <div class="section-title">備考・担当</div>
+                <div class="form-group"><label>自由備考</label><textarea id="form-memo" rows="3"></textarea></div>
+                <div class="form-group"><label>入力担当者</label><input type="text" id="form-user"></div>
+
+                <div class="section-title">物件ファイル (Googleドライブ連携)</div>
+                <div style="border: 2px dashed #ddd; padding: 10px; border-radius: 8px; text-align: center; background: #fafafa;">
+                    <input type="file" id="file-input" multiple style="font-size:11px;">
+                    <div id="file-list-editor" style="text-align:left; margin-top:10px; font-size:11px; color:#666;"></div>
+                </div>
+
+                <button class="btn-save-main" onclick="submitForm()">保存</button>
                 <button class="btn-delete" id="delete-btn" onclick="deleteProperty()">この区画を完全に削除</button>
             </div>
         </div>
@@ -215,14 +208,12 @@
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
 
-      // フィールド対応
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
           "form-addr1":"addr1", "form-addr2":"addr2", "form-addr3":"addr3", 
-          "form-p-first":"p_first", "form-p-current":"p_current",
-          "form-p-h1":"p_h1", "form-p-d1":"p_d1", "form-p-h2":"p_h2", "form-p-d2":"p_d2",
-          "form-p-s":"p_s", "form-is-sold":"is_sold",
-          "form-t-m2":"t_m2", "form-t-tsubo":"t_tsubo", "form-is-att":"is_att", "form-user":"user", "form-memo":"memo"
+          "form-p-first":"p_first", "form-d-first":"d_first", "form-p-c1":"p_c1", "form-d-c1":"d_c1", "form-p-c2":"p_c2", "form-d-c2":"d_c2",
+          "form-p-s":"p_s", "form-d-s":"d_s", "form-is-sold":"is_sold", "form-t-m2":"t_m2", "form-t-tsubo":"t_tsubo",
+          "form-is-att":"is_att", "form-user":"user", "form-memo":"memo"
       };
 
       const ICON_MAP = {
@@ -231,7 +222,7 @@
           "売地": "https://sohken-homes.github.io/icon_land.png",
           "自社物件": "https://sohken-homes.github.io/icon_jisha_new.png",
           "SOLD": "https://sohken-homes.github.io/sold_house.png",
-          "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+          "DEFAULT": "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
       };
 
       let map, geocoder, allData = [], markersList = [], clusterer = null, currentEditingMarker = null;
@@ -264,24 +255,24 @@
           map = new google.maps.Map(document.getElementById("map"), {
               center: { lat: 35.700, lng: 139.630 }, zoom: 14, mapId: MAP_ID,
               streetViewControl: true,
-              streetViewControlOptions: { position: google.maps.ControlPosition.TOP_LEFT }, // ★左上に設定
+              streetViewControlOptions: { position: google.maps.ControlPosition.LEFT_TOP }, 
               mapTypeControl: true,
               mapTypeControlOptions: { 
-                  position: google.maps.ControlPosition.TOP_LEFT,
+                  position: google.maps.ControlPosition.LEFT_TOP,
                   style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR 
               }
           });
           geocoder = new google.maps.Geocoder();
           map.addListener("dblclick", e => addNewProperty(e.latLng.lat(), e.latLng.lng()));
           
-          // ペグマン（StreetView）の位置を左上のボタンの右側に微調整
-          const checkSV = setInterval(() => {
-              const sv = document.querySelector('.gm-svpc');
-              if (sv) {
-                  sv.parentElement.style.marginLeft = "100px"; // 航空写真ボタンの分だけ右に寄せる
-                  clearInterval(checkSV);
+          // ペグマンとボタンの位置調整（住所検索の左端に合わせる）
+          const offset = setInterval(() => {
+              const controls = document.querySelectorAll('.gmnoprint');
+              if(controls.length > 0) {
+                  controls.forEach(c => { if(c.parentElement) c.parentElement.style.left = "0px"; });
+                  clearInterval(offset);
               }
-          }, 500);
+          }, 300);
 
           fetchMapData();
       }
@@ -295,7 +286,6 @@
       function renderMarkers() {
           if(clusterer) clusterer.clearMarkers();
           markersList.forEach(m => m.map = null); markersList = [];
-          
           const filters = Array.from(document.querySelectorAll('.layer-cb:checked')).map(c => c.value);
           const onlyAtt = document.getElementById('layer-att').checked;
 
@@ -304,31 +294,26 @@
               const isSold = (row["成約フラグ"] === "TRUE" || row["成約フラグ"] === true);
               const isAtt = (row["注目継続"] === "TRUE" || row["注目継続"] === true);
               
+              if(onlyAtt && !isAtt) return;
               if(!document.getElementById('layer-all').checked) {
                   if(isSold && !filters.includes("SOLD")) return;
                   if(!isSold && !filters.includes(type)) return;
               }
-              if(onlyAtt && !isAtt) return;
               
               const div = document.createElement("div");
               div.style.position = "relative";
-              
               const img = document.createElement("img");
               img.src = isSold ? ICON_MAP["SOLD"] : (ICON_MAP[type] || ICON_MAP["DEFAULT"]);
               img.style.width = "34px"; img.style.cursor = "pointer";
               div.appendChild(img);
-
               if(isAtt) {
                   const ring = document.createElement("div"); ring.className = "attention-ring";
                   div.appendChild(ring);
               }
 
-              const marker = new google.maps.marker.AdvancedMarkerElement({
-                  position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) },
-                  map: map, content: div
-              });
-              marker.rowIds = String(row["ID"]);
-              div.onclick = () => openView(marker.rowIds, marker);
+              const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(row["緯度"]), lng: Number(row["経度"]) }, map, content: div });
+              marker.rowId = String(row["ID"]);
+              div.onclick = () => openView(marker.rowId, marker);
               markersList.push(marker);
           });
           clusterer = new markerClusterer.MarkerClusterer({ map, markers: markersList });
@@ -342,16 +327,16 @@
           loadViewData(currentTabs[0].data);
           document.getElementById("view-panel").style.setProperty("display", "flex", "important");
           document.getElementById("editor-panel").style.setProperty("display", "none", "important");
-          if(marker) highlightMarker(marker);
+          updateAttButtonUI(currentTabs[0].data.is_att);
       };
 
       function mapSheetToLocal(r) {
           return { 
               id:r["ID"], lat:r["緯度"], lng:r["経度"], type:r["物件種別"], name:r["物件名称"], tab_name:r["区画名"], 
               addr1:r["市・区"], addr2:r["所在（丁目まで）"], addr3:r["住居表示（丁目以降）"], 
-              p_first:r["販売価格（初回入力時/万円）"], p_current:r["販売価格（現在/万円）"],
-              p_h1:r["価格変更1"], p_d1:r["変更日1"], p_h2:r["価格変更2"], p_d2:r["変更日2"],
-              p_s:r["成約価格（万円）"], is_sold:r["成約フラグ"]=="TRUE", 
+              p_first:r["販売価格（初回入力時/万円）"], d_first:r["初回価格入力日"],
+              p_c1:r["変更価格１（万円）"], d_c1:r["変更日1"], p_c2:r["変更価格２（万円）"], d_c2:r["変更日2"],
+              p_s:r["成約価格（万円）"], d_s:r["成約日"], is_sold:r["成約フラグ"]=="TRUE", 
               t_m2:r["地積（㎡）"], t_tsubo:r["地積（坪）"], is_att:r["注目継続"]=="TRUE", 
               user:r["入力者"], memo:r["備考"] || "" 
           };
@@ -359,43 +344,68 @@
 
       function loadViewData(data) {
           const c = document.getElementById("view-container");
+          let prices = [data.p_first, data.p_c1, data.p_c2, data.p_s].filter(Boolean);
+          let latestPrice = prices.length > 0 ? prices[prices.length-1] : "-";
+          
           c.innerHTML = `
-            <div class="view-item"><span>物件名称 / 業者名</span>${data.name || "-"}</div>
-            <div class="view-item"><span>種別 / 区画</span>${data.type || "-"} / ${data.tab_name || "-"}</div>
-            <div class="view-item"><span>住所</span>${data.addr1||""}${data.addr2||""}${data.addr3||""}</div>
-            <div class="section-title">価格推移</div>
-            <div class="view-item"><span>初回価格</span>${data.p_first || "-"} 万円</div>
-            ${data.p_h1 ? `<div class="view-item"><span>変更1 (${data.p_d1})</span>${data.p_h1} 万円</div>` : ''}
-            ${data.p_h2 ? `<div class="view-item"><span>変更2 (${data.p_d2})</span>${data.p_h2} 万円</div>` : ''}
-            <div class="view-item" style="background:#fff9e6;"><span>現在の価格</span><b style="font-size:16px; color:#d93025;">${data.p_current || "-"}</b> 万円</div>
-            <div class="view-item"><span>成約状況</span>${data.is_sold ? '<b style="color:#d93025;">成約済 ('+data.p_s+'万円)</b>' : '販売中'}</div>
-            <div class="section-title">土地・建物</div>
-            <div class="view-item"><span>土地面積</span>${data.t_m2 || "-"} ㎡ (${data.t_tsubo || "-"} 坪)</div>
+            <div style="margin-bottom:10px;"><span style="background:#eee; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${data.type||"種別未定"}</span></div>
+            <div style="font-size:18px; font-weight:bold; margin-bottom:5px;">${data.name || "名称未定"}</div>
+            <div style="font-size:12px; color:#666; margin-bottom:15px;">📍 ${data.addr1||""}${data.addr2||""}${data.addr3||""}</div>
+            
+            <div class="view-price-box">
+                <div class="view-latest-price">${data.is_sold ? "成約済 " : ""}${latestPrice} <span style="font-size:14px;">万円</span></div>
+                ${prices.length > 1 ? `<div style="font-size:11px; color:#888; margin-top:8px;">${prices.join(" ➔ ")}</div>` : ""}
+            </div>
+
+            <div class="section-title">物件スペック</div>
+            <div class="view-grid">
+                <div class="view-item"><span>土地面積</span>${data.t_m2}㎡ (${data.t_tsubo}坪)</div>
+                <div class="view-item"><span>区画番号</span>${data.tab_name}</div>
+            </div>
+            
             <div class="section-title">備考</div>
-            <div class="view-item" style="white-space:pre-wrap;">${data.memo || "なし"}</div>
-            ${data.is_att ? '<div style="color:#007bff; font-weight:bold; margin:10px 0;">★ 注目継続物件</div>' : ''}
-            <div class="view-item" style="margin-top:15px;"><span>最終更新担当</span>${data.user || "-"}</div>
+            <div class="view-item" style="white-space:pre-wrap;">${data.memo || "特記事項なし"}</div>
+            
+            <div class="view-item" style="margin-top:20px; border-left:3px solid #1a73e8;"><span>最終担当者</span>${data.user || "-"}</div>
           `;
       }
 
+      function toggleAttention() {
+          const d = currentTabs[activeTabIndex].data;
+          d.is_att = !d.is_att;
+          document.getElementById('form-is-att').checked = d.is_att;
+          updateAttButtonUI(d.is_att);
+          // 閲覧モードの場合は即座にGASへ通知
+          if(document.getElementById('view-panel').style.display === 'flex') {
+              submitForm(); 
+          }
+      }
+
+      function updateAttButtonUI(isAtt) {
+          const btns = [document.getElementById('view-att-btn'), document.getElementById('edit-att-btn')];
+          btns.forEach(btn => {
+              if(isAtt) { btn.className = "btn-action btn-att-on"; btn.innerText = "★ 注目ON"; }
+              else { btn.className = "btn-action btn-att-off"; btn.innerText = "★ 注目OFF"; }
+          });
+      }
+
       window.switchToEdit = () => {
-          saveCurrentTabData();
           loadTabData(currentTabs[activeTabIndex].data);
           renderTabs();
           document.getElementById("view-panel").style.setProperty("display", "none", "important");
           document.getElementById("editor-panel").style.setProperty("display", "flex", "important");
+          updateAttButtonUI(currentTabs[activeTabIndex].data.is_att);
       };
 
       window.switchToView = () => {
-          saveCurrentTabData();
           loadViewData(currentTabs[activeTabIndex].data);
           document.getElementById("editor-panel").style.setProperty("display", "none", "important");
           document.getElementById("view-panel").style.setProperty("display", "flex", "important");
+          updateAttButtonUI(currentTabs[activeTabIndex].data.is_att);
       };
 
       window.closePanel = () => {
           document.querySelectorAll('.side-panel').forEach(p => p.style.setProperty("display", "none", "important"));
-          if(currentEditingMarker && !currentEditingMarker.rowIds) currentEditingMarker.map = null;
           currentEditingMarker = null;
       };
 
@@ -412,35 +422,13 @@
       window.submitForm = async () => {
           saveCurrentTabData();
           document.getElementById("saving-overlay").style.display = "flex";
-          
-          const files = document.getElementById('file-input').files;
-          const fileData = [];
-          for (let f of files) {
-              const base64 = await toBase64(f);
-              fileData.push({ name: f.name, mimeType: f.type, data: base64.split(',')[1] });
-          }
-
-          const payload = {
-              mode: "save_multiple", reqUser: getUser(), password: getPass(),
-              data: currentTabs.map(t => t.data),
-              files: fileData
-          };
-
+          const payload = { mode: "save_multiple", reqUser: getUser(), password: getPass(), data: currentTabs.map(t => t.data) };
           try {
               const res = await fetch(GAS_URL, { method:"POST", body: JSON.stringify(payload) });
               const r = await res.json();
-              if(r.success) {
-                  await fetchMapData();
-                  alert("保存が完了しました");
-                  switchToView();
-              } else { alert("エラー: " + r.error); }
+              if(r.success) { await fetchMapData(); switchToView(); }
           } finally { document.getElementById("saving-overlay").style.display = "none"; }
       };
-
-      const toBase64 = file => new Promise((res, rej) => {
-          const reader = new FileReader(); reader.readAsDataURL(file);
-          reader.onload = () => res(reader.result); reader.onerror = e => rej(e);
-      });
 
       function saveCurrentTabData() {
           const d = currentTabs[activeTabIndex].data;
@@ -448,7 +436,6 @@
               const el = document.getElementById(id); if(!el) return;
               d[FORM_MAP[id]] = (el.type === 'checkbox') ? el.checked : el.value;
           });
-          currentTabs[activeTabIndex].label = d.tab_name;
       }
 
       function loadTabData(data) {
@@ -457,20 +444,15 @@
               if(el.type === 'checkbox') el.checked = !!data[FORM_MAP[id]];
               else el.value = data[FORM_MAP[id]] || "";
           });
-          document.getElementById("delete-btn").style.display = data.id ? "block" : "none";
       }
 
       function renderTabs() {
           const b = document.getElementById("tab-bar"); b.innerHTML = "";
           currentTabs.forEach((t, i) => {
               const el = document.createElement("div"); el.className = `tab ${i===activeTabIndex?'active':''}`;
-              el.innerText = t.label || "区画"+(i+1); el.onclick = () => { saveCurrentTabData(); activeTabIndex = i; loadTabData(currentTabs[i].data); renderTabs(); };
+              el.innerText = t.label; el.onclick = () => { saveCurrentTabData(); activeTabIndex = i; loadTabData(currentTabs[i].data); renderTabs(); };
               b.appendChild(el);
           });
-      }
-
-      function highlightMarker(m) {
-          currentEditingMarker = m;
       }
 
       function addNewProperty(lat, lng) {
@@ -478,23 +460,12 @@
           const div = document.createElement("div"); const img = document.createElement("img");
           img.src = ICON_MAP["DEFAULT"]; img.style.width="34px"; div.appendChild(img);
           const m = new google.maps.marker.AdvancedMarkerElement({ position:{lat, lng}, map, content:div, gmpDraggable:true });
-          highlightMarker(m);
-          currentTabs = [{ label:"区画1", data:{ id:"", lat, lng, tab_name:"区画1", user:getUser(), type:"新築戸建" } }];
+          currentTabs = [{ label:"区画1", data:{ id:"", lat, lng, tab_name:"区画1", user:getUser(), type:"新築戸建", is_att: false } }];
           activeTabIndex = 0;
           switchToEdit();
-          
           geocoder.geocode({location:{lat, lng}}, res => {
               if(res[0]) {
-                  const comps = res[0].address_components;
-                  let city = "", town = "", rest = "";
-                  comps.forEach(c => {
-                      if(c.types.includes("locality")) city = c.long_name;
-                      if(c.types.includes("sublocality_level_1")) town = c.long_name;
-                      if(c.types.includes("sublocality_level_2") || c.types.includes("sublocality_level_3") || c.types.includes("sublocality_level_4")) rest += c.long_name;
-                  });
-                  document.getElementById("form-addr1").value = city;
-                  document.getElementById("form-addr2").value = town;
-                  document.getElementById("form-addr3").value = rest;
+                  document.getElementById("form-addr1").value = res[0].formatted_address.match(/[市区町村].*?[市区町村]/) ? res[0].formatted_address.match(/[市区町村].*?[市区町村]/)[0] : "";
               }
           });
       }
@@ -503,16 +474,12 @@
           const address = document.getElementById("address-input").value;
           if(!address) return;
           geocoder.geocode({ address: address }, (res, status) => {
-              if (status === "OK") { 
-                  map.setCenter(res[0].geometry.location); 
-                  map.setZoom(18); 
-                  addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); 
-              } else { alert("住所が見つかりませんでした"); }
+              if (status === "OK") { map.setCenter(res[0].geometry.location); map.setZoom(18); addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); }
           });
       };
 
       window.deleteProperty = async () => {
-          if(!confirm("このデータをスプレッドシートから完全に削除します。よろしいですか？")) return;
+          if(!confirm("完全に削除しますか？")) return;
           document.getElementById("saving-overlay").style.display = "flex";
           try {
               await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ id: document.getElementById("form-id").value, mode: "delete", reqUser: getUser(), password: getPass() }) });
@@ -522,17 +489,11 @@
 
       window.addEventListener('load', () => {
           if (sessionStorage.getItem("mapAuthStatus") === "authorized") showAppScreen();
-          
-          document.getElementById('layer-all').onchange = e => {
-              document.querySelectorAll('.layer-cb').forEach(c => c.checked = e.target.checked);
-              renderMarkers();
-          };
+          document.getElementById('layer-all').onchange = e => { document.querySelectorAll('.layer-cb').forEach(c => c.checked = e.target.checked); renderMarkers(); };
           document.querySelectorAll('.layer-cb, #layer-att').forEach(c => c.onchange = renderMarkers);
-          
-          // 面積自動計算
           document.getElementById('form-t-m2').oninput = e => {
-              const m2 = parseFloat(e.target.value);
-              if(!isNaN(m2)) document.getElementById('form-t-tsubo').value = (Math.floor((m2 * 0.3025) * 100) / 100).toFixed(2);
+              const m = parseFloat(e.target.value);
+              if(!isNaN(m)) document.getElementById('form-t-tsubo').value = (Math.floor((m * 0.3025) * 100) / 100).toFixed(2);
           };
       });
     </script>
