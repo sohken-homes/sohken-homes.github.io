@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.12</title>
+    <title>不動産管理マップ v5.0.13</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -111,8 +111,8 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
         }
 
-        .attention-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; border: 4px solid rgba(0, 123, 255, 0.7); border-radius: 50%; pointer-events: none; animation: att-pulse 2s infinite; }
-        @keyframes att-pulse { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
+        /* 注目ONのアニメーションなしの静的な丸印 */
+        .attention-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; border: 3px solid rgba(0, 123, 255, 0.8); border-radius: 50%; pointer-events: none; }
         
         #saving-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -360,7 +360,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbyVOgA76VEZIxkqw6tYLNWnncz8nrM30W1nYkp6p43UsVTR31vhJ37splMXmMgyS6oV/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwS41wZa5Wb2nBH5TzWY23aP-aw6OMyEY6x8zW_elTW1hadZgqgVLUoeRG8xNkKv6t-/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -646,15 +646,16 @@
           document.getElementById("view-panel").style.setProperty("display", "none", "important"); 
       };
 
+      // 注目ON/OFF切り替え時に無条件で保存するよう修正
       window.toggleAttention = () => {
           if (!currentTabs[activeTabIndex] || !currentTabs[activeTabIndex].data) return;
           const d = currentTabs[activeTabIndex].data;
           d.is_att = !d.is_att;
           document.getElementById('form-is-att').checked = d.is_att;
           updateAttButtonUI(d.is_att);
-          if(document.getElementById('view-panel').style.display === 'flex' || document.getElementById('view-panel').style.display === 'block') {
-              touchUpdate(true);
-          }
+          
+          // モードに関わらずスプレッドシートに即時保存
+          touchUpdate(true);
       };
 
       function updateAttButtonUI(isAtt) {
@@ -667,9 +668,10 @@
           });
       }
 
+      // 成功時のアラート（ポップアップ）を削除
       window.touchUpdate = async (silent = false) => {
           const id = currentTabs[activeTabIndex].data.id;
-          if(!id) return;
+          if(!id) return; // 新規データでIDしかない（スプレッドシートに未保存）場合はスキップ
           document.getElementById("saving-overlay").style.display = "flex";
           try {
               const isAtt = currentTabs[activeTabIndex].data.is_att;
@@ -678,7 +680,7 @@
                   body: JSON.stringify({ mode: "touch_update", reqUser: getUser(), password: getPass(), data: [{id: id, is_att: isAtt}] }) 
               });
               await fetchMapData();
-              if(!silent) alert("更新日を記録しました");
+              // 成功時はアラートを出さない
           } catch(e) {
               if(e.message && e.message.includes("パスワード")) forceLogout();
               else if(!silent) alert("エラーが発生しました: " + e.message);
@@ -1134,6 +1136,7 @@
           else return ""; 
       }
 
+      // 成功時のアラート（ポップアップ）を削除
       window.submitForm = async () => {
         saveCurrentTabData(); 
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
@@ -1157,7 +1160,7 @@
             if(result.error) throw new Error(result.error);
             
             await fetchMapData(); 
-            alert("保存が完了しました。");
+            // 成功時はアラートを出さない
         } catch (e) { 
             if(e.message.includes("パスワードが正しくありません")) forceLogout();
             else alert("保存失敗: " + e.message); 
@@ -1281,7 +1284,6 @@
                 const isSold = (first["成約フラグ"] === true || first["成約フラグ"] === "TRUE");
                 const pType = first["物件種別"] || "";
                 
-                // ★修正: 単独物件の成約時、種別ごとにアイコンを出し分ける
                 if (isSold) {
                     if (["新築MS", "中古MS", "自社中古MS(情開)"].includes(pType)) {
                         img.src = "https://sohken-homes.github.io/sold_ms.png";
@@ -1292,7 +1294,6 @@
                     } else if (pType === "査定依頼MS") {
                         img.src = "https://sohken-homes.github.io/sold_satei_ms.png";
                     } else {
-                        // 新築戸建、中古戸建、自社新築などの戸建系デフォルト
                         img.src = "https://sohken-homes.github.io/sold_house.png"; 
                     }
                 } else {
