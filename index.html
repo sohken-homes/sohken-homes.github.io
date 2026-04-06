@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.16</title>
+    <title>不動産管理マップ v5.0.17</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -364,7 +364,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbyq51hloGJ40YdCIAVqQe2VJVqb5awtaPThnn9KUdGGEDDoZX1h6-Fe_WacIUVumRL1/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbxVEVSADhei2WKSSHl9tXgmomdf0h7jKY3rrw0cJ6g0l16LTAzeynjV0_OWc7rAr2x9/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -557,10 +557,21 @@
         currentTabs = [{ label: "区画1", data: { id: newId, lat: lat, lng: lng, tab_name: "区画1", user: getUser(), is_att: false } }];
         activeTabIndex = 0; 
         
+        marker.hasDragListener = true;
         marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
-        marker.addListener('dragend', (e) => {
-            currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
-            fetchAddress(e.latLng.lat(), e.latLng.lng());
+        marker.addListener('dragend', async (e) => {
+            const newLat = e.latLng.lat(), newLng = e.latLng.lng();
+            // ★多棟現場のすべてのタブの座標を一括更新
+            currentTabs.forEach(tab => { tab.data.lat = newLat; tab.data.lng = newLng; });
+            document.getElementById("form-lat").value = newLat;
+            document.getElementById("form-lng").value = newLng;
+            fetchAddress(newLat, newLng);
+            
+            // ★座標更新を即座にGASへ送信
+            const updateData = currentTabs.filter(t => t.data.id).map(t => ({ id: t.data.id, lat: newLat, lng: newLng }));
+            if (updateData.length > 0) {
+                try { await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ mode: "update_coords", reqUser: getUser(), password: getPass(), data: updateData }) }); } catch(err) {}
+            }
             setTimeout(() => { isDragging = false; dragLock = false; }, 300);
         });
         
@@ -610,12 +621,23 @@
 
       window.switchToEdit = () => {
           document.getElementById("view-panel").style.setProperty("display", "none", "important");
-          if(currentEditingMarker) {
+          if(currentEditingMarker && !currentEditingMarker.hasDragListener) {
               currentEditingMarker.gmpDraggable = true;
+              currentEditingMarker.hasDragListener = true;
               currentEditingMarker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
-              currentEditingMarker.addListener('dragend', (e) => {
-                  currentTabs.forEach(tab => { tab.data.lat = e.latLng.lat(); tab.data.lng = e.latLng.lng(); });
-                  fetchAddress(e.latLng.lat(), e.latLng.lng());
+              currentEditingMarker.addListener('dragend', async (e) => {
+                  const newLat = e.latLng.lat(), newLng = e.latLng.lng();
+                  // ★多棟現場のすべてのタブの座標を一括更新
+                  currentTabs.forEach(tab => { tab.data.lat = newLat; tab.data.lng = newLng; });
+                  document.getElementById("form-lat").value = newLat;
+                  document.getElementById("form-lng").value = newLng;
+                  fetchAddress(newLat, newLng);
+                  
+                  // ★座標更新を即座にGASへ送信
+                  const updateData = currentTabs.filter(t => t.data.id).map(t => ({ id: t.data.id, lat: newLat, lng: newLng }));
+                  if (updateData.length > 0) {
+                      try { await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ mode: "update_coords", reqUser: getUser(), password: getPass(), data: updateData }) }); } catch(err) {}
+                  }
                   setTimeout(() => { isDragging = false; dragLock = false; }, 300);
               });
           }
@@ -652,10 +674,13 @@
 
       window.toggleAttention = () => {
           if (!currentTabs[activeTabIndex] || !currentTabs[activeTabIndex].data) return;
-          const d = currentTabs[activeTabIndex].data;
-          d.is_att = !d.is_att;
-          document.getElementById('form-is-att').checked = d.is_att;
-          updateAttButtonUI(d.is_att);
+          const newState = !currentTabs[activeTabIndex].data.is_att;
+          
+          // ★修正：同じ現場の全ての区画(タブ)の注目フラグを一括で切り替える
+          currentTabs.forEach(tab => { tab.data.is_att = newState; });
+          
+          document.getElementById('form-is-att').checked = newState;
+          updateAttButtonUI(newState);
           touchUpdate(true);
       };
 
@@ -669,13 +694,12 @@
           });
       }
 
-      // ★修正: アクティブなタブだけでなく、保存済みの全タブデータを一括で送信し、グループ全体の更新日を統一する
       window.touchUpdate = async (silent = false) => {
           const updateData = currentTabs
-              .filter(t => t.data.id) // 未保存（IDが空）の新規区画は除外
+              .filter(t => t.data.id) 
               .map(t => { return { id: t.data.id, is_att: t.data.is_att }; });
               
-          if(updateData.length === 0) return; // 送信するデータがなければ終了
+          if(updateData.length === 0) return; 
 
           document.getElementById("saving-overlay").style.display = "flex";
           try {
@@ -841,7 +865,16 @@
           html += vItem("土地面積", data.t_m2 ? `${formatAreaStrict(data.t_m2)} ㎡ (${formatAreaStrict(data.t_tsubo)} 坪)` : "");
           html += vItem("建物面積", data.b_m2 ? `${formatAreaStrict(data.b_m2)} ㎡ (${formatAreaStrict(data.b_tsubo)} 坪)` : "");
           html += vItem("間取り", data.layout);
-          if(patternA.includes(type) && subPStr !== "") html += vItem("想定建物価格", `${formatNumberWithComma(subPStr)} 万円`);
+          
+          // ★修正：建物想定価格と建物坪単価を1つのマスにまとめて表示
+          if(patternA.includes(type) && subPStr !== "") {
+              let buildText = `${formatNumberWithComma(subPStr)} 万円`;
+              if (subP > 0 && bTsubo > 0) {
+                  let bUnit = subP / bTsubo;
+                  buildText += `<span style="font-weight:normal; color:#c41d7f;">（坪単価：${bUnit.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪）</span>`;
+              }
+              html += vItem("建物想定価格", buildText, true); 
+          }
           html += `</div>`;
 
           html += `<div class="section-title">公法制限・接道・交通</div><div class="view-grid">`;
@@ -1127,7 +1160,6 @@
             buildPriceInput.style.display = "block";
             labelLand.innerText = "土地坪単価：";
             
-            // ★追加: 建物坪単価の計算と表示
             if (subP > 0 && bTsubo > 0) {
                 let bUnit = subP / bTsubo;
                 buildUnitBox.style.display = "block";
@@ -1206,6 +1238,14 @@
 
         try {
             const fName = buildFolderName();
+            
+            // ★修正：多棟現場の場合、代表的な共通項目（座標、住所など）をすべてのタブに強制同期させる
+            const baseData = currentTabs[activeTabIndex].data;
+            const sharedKeys = ["lat", "lng", "name", "addr1", "addr2", "addr3", "gyosha", "shiten", "taiyou", "media", "intro_user", "kenpei", "youseki", "law", "road", "train_line", "train_station", "train_walk", "train_memo", "is_att"];
+            currentTabs.forEach(t => {
+                sharedKeys.forEach(k => { t.data[k] = baseData[k]; });
+            });
+
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
                 dataCopy.folderName = fName;
@@ -1275,6 +1315,35 @@
           }
       };
 
+      async function processMissingCoords(missingRows) {
+          let updates = [];
+          for (let row of missingRows) {
+              const addr = (row["市・区"] || "") + (row["所在（丁目まで）"] || "") + (row["住居表示（丁目以降）"] || "");
+              if (addr) {
+                  try {
+                      const res = await new Promise((resolve, reject) => {
+                          geocoder.geocode({ address: addr }, (results, status) => {
+                              if (status === "OK") resolve(results[0].geometry.location);
+                              else reject(status);
+                          });
+                      });
+                      row["緯度"] = res.lat();
+                      row["経度"] = res.lng();
+                      updates.push({ id: row["ID"], lat: res.lat(), lng: res.lng() });
+                      await new Promise(r => setTimeout(r, 400)); // API制限回避のため少し待機
+                  } catch(e) { console.warn("Geocode failed for: " + addr); }
+              }
+          }
+          if (updates.length > 0) {
+              // 取得した座標をGASに送って保存させる
+              fetch(GAS_URL, {
+                  method: "POST", headers: { "Content-Type": "text/plain" },
+                  body: JSON.stringify({ mode: "update_coords", reqUser: getUser(), password: getPass(), data: updates })
+              }).then(() => renderMarkers()).catch(()=>{});
+              renderMarkers(); // 現在の画面も更新
+          }
+      }
+
       async function fetchMapData() {
         try {
             const res = await fetch(GAS_URL, { 
@@ -1287,7 +1356,15 @@
                 else alert("データの読み込みに失敗しました：\n" + result.error); 
                 return; 
             }
-            allData = result; renderMarkers(); 
+            allData = result; 
+            
+            // ★追加：座標がなくて住所だけあるデータを探して自動取得する
+            const missingCoords = allData.filter(r => !r["緯度"] || !r["経度"]);
+            if(missingCoords.length > 0) {
+                processMissingCoords(missingCoords);
+            }
+            
+            renderMarkers(); 
         } catch (e) { alert("通信エラーが発生しました。GASのURLが正しいか確認してください。"); }
       }
 
@@ -1300,7 +1377,7 @@
 
         const groups = {};
         allData.forEach(row => {
-            if (!row["緯度"] || !row["経度"]) return;
+            if (!row["緯度"] || !row["経度"]) return; // 座標がないものはスキップ（後で自動取得される）
             const isAtt = (row["注目継続"] === true || row["注目継続"] === "TRUE");
             if (onlyAtt && !isAtt) return;
 
