@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.17</title>
+    <title>不動産管理マップ v5.0.18</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -102,11 +102,12 @@
         .file-actions button { font-size: 10px; padding: 2px 6px; margin-left: 4px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: white; }
         .file-actions button.del { color: #cf1322; border-color: #ffa39e; }
 
-        .active-marker { outline: 4px solid #ff9800; outline-offset: 2px; border-radius: 50%; box-shadow: 0 0 15px rgba(255, 152, 0, 0.8); animation: pulse 1.5s infinite; }
+        /* ▼ 修正：マーカー強調をより目立つ赤色＆太い波紋に強化 */
+        .active-marker { outline: 5px solid #e53935; outline-offset: 3px; border-radius: 50%; box-shadow: 0 0 20px rgba(229, 57, 53, 0.9); animation: pulse 1s infinite; background-color: rgba(255, 255, 255, 0.8); }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(255, 152, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.8); }
+            70% { box-shadow: 0 0 0 20px rgba(229, 57, 53, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); }
         }
 
         .attention-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; border: 3px solid rgba(0, 123, 255, 0.8); border-radius: 50%; pointer-events: none; }
@@ -123,10 +124,10 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h2>不動産管理マップ</h2>
+            <h2>創建ホームズ不動産管理マップ</h2>
             <div class="input-group">
-                <label>入力者名（漢字・かな）</label>
-                <input type="text" id="user-name" placeholder="例：山田 太郎">
+                <label>入力者名</label>
+                <input type="text" id="user-name" placeholder="名前を入力">
             </div>
             <div class="input-group">
                 <label>共通パスワード</label>
@@ -267,7 +268,7 @@
                         <input type="text" id="form-b-m2" placeholder="0.00" class="comma-input area-input only-num flex-item"><span class="unit-label">㎡</span>
                         <input type="text" id="form-b-tsubo" placeholder="0.00" class="comma-input area-input flex-item" readonly><span class="unit-label">坪</span>
                     </div>
-                    <label>間取り</label><input type="text" id="form-layout" placeholder="4LDK">
+                    <label>敷地条件・間取り</label><input type="text" id="form-layout" placeholder="敷地延長、4LDKなど">
                 </div>
 
                 <div class="section-title">単価計算（自動反映）</div>
@@ -364,7 +365,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbxVEVSADhei2WKSSHl9tXgmomdf0h7jKY3rrw0cJ6g0l16LTAzeynjV0_OWc7rAr2x9/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbykcqd1v-SQq605en1lETl2NZYZ1xIWPkXZpegCr-CVKRLZGS4prQSqHv-ICbOvLFQj/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -561,13 +562,11 @@
         marker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
         marker.addListener('dragend', async (e) => {
             const newLat = e.latLng.lat(), newLng = e.latLng.lng();
-            // ★多棟現場のすべてのタブの座標を一括更新
             currentTabs.forEach(tab => { tab.data.lat = newLat; tab.data.lng = newLng; });
             document.getElementById("form-lat").value = newLat;
             document.getElementById("form-lng").value = newLng;
             fetchAddress(newLat, newLng);
             
-            // ★座標更新を即座にGASへ送信
             const updateData = currentTabs.filter(t => t.data.id).map(t => ({ id: t.data.id, lat: newLat, lng: newLng }));
             if (updateData.length > 0) {
                 try { await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ mode: "update_coords", reqUser: getUser(), password: getPass(), data: updateData }) }); } catch(err) {}
@@ -592,7 +591,7 @@
               const sheetToKey = {
                   "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
                   "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成約フラグ":"is_sold", "成フラグ":"is_sold",
-                  "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "間取り":"layout", "建物価格入力用":"sub_p",
+                  "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "敷地条件・間取り":"layout", "建物価格入力用":"sub_p",
                   "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
                   "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road",
                   "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
@@ -627,13 +626,11 @@
               currentEditingMarker.addListener('dragstart', () => { isDragging = true; dragLock = true; }); 
               currentEditingMarker.addListener('dragend', async (e) => {
                   const newLat = e.latLng.lat(), newLng = e.latLng.lng();
-                  // ★多棟現場のすべてのタブの座標を一括更新
                   currentTabs.forEach(tab => { tab.data.lat = newLat; tab.data.lng = newLng; });
                   document.getElementById("form-lat").value = newLat;
                   document.getElementById("form-lng").value = newLng;
                   fetchAddress(newLat, newLng);
                   
-                  // ★座標更新を即座にGASへ送信
                   const updateData = currentTabs.filter(t => t.data.id).map(t => ({ id: t.data.id, lat: newLat, lng: newLng }));
                   if (updateData.length > 0) {
                       try { await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ mode: "update_coords", reqUser: getUser(), password: getPass(), data: updateData }) }); } catch(err) {}
@@ -676,7 +673,6 @@
           if (!currentTabs[activeTabIndex] || !currentTabs[activeTabIndex].data) return;
           const newState = !currentTabs[activeTabIndex].data.is_att;
           
-          // ★修正：同じ現場の全ての区画(タブ)の注目フラグを一括で切り替える
           currentTabs.forEach(tab => { tab.data.is_att = newState; });
           
           document.getElementById('form-is-att').checked = newState;
@@ -701,6 +697,10 @@
               
           if(updateData.length === 0) return; 
 
+          const activeId = currentTabs[activeTabIndex]?.data?.id;
+          const activeLat = currentTabs[activeTabIndex]?.data?.lat;
+          const activeLng = currentTabs[activeTabIndex]?.data?.lng;
+
           document.getElementById("saving-overlay").style.display = "flex";
           try {
               await fetch(GAS_URL, { 
@@ -708,6 +708,13 @@
                   body: JSON.stringify({ mode: "touch_update", reqUser: getUser(), password: getPass(), data: updateData }) 
               });
               await fetchMapData();
+              
+              // ▼ 修正：更新完了後、元いたピンの強調状態を自動で復元させる
+              let newMarker = null;
+              if (activeId) newMarker = markersList.find(m => m.rowIds && m.rowIds.includes(activeId));
+              if (!newMarker && activeLat && activeLng) newMarker = markersList.find(m => Math.abs(m.position.lat - activeLat) < 0.00001 && Math.abs(m.position.lng - activeLng) < 0.00001);
+              if (newMarker) highlightMarker(newMarker);
+              
           } catch(e) {
               if(e.message && e.message.includes("パスワード")) forceLogout();
               else if(!silent) alert("エラーが発生しました: " + e.message);
@@ -864,9 +871,8 @@
           html += `<div class="section-title">面積・間取り</div><div class="view-grid">`;
           html += vItem("土地面積", data.t_m2 ? `${formatAreaStrict(data.t_m2)} ㎡ (${formatAreaStrict(data.t_tsubo)} 坪)` : "");
           html += vItem("建物面積", data.b_m2 ? `${formatAreaStrict(data.b_m2)} ㎡ (${formatAreaStrict(data.b_tsubo)} 坪)` : "");
-          html += vItem("間取り", data.layout);
+          html += vItem("敷地条件・間取り", data.layout);
           
-          // ★修正：建物想定価格と建物坪単価を1つのマスにまとめて表示
           if(patternA.includes(type) && subPStr !== "") {
               let buildText = `${formatNumberWithComma(subPStr)} 万円`;
               if (subP > 0 && bTsubo > 0) {
@@ -900,17 +906,28 @@
                        ${data.drive_url ? `<div style="color:#666; text-align:center; font-size:12px;">ファイルを読み込み中...</div>` : `<div style='color:#999; text-align:center; font-size:12px;'>ファイルはまだありません</div>`}
                    </div>`;
 
+          // ▼ 修正：閲覧パネルの仕入分析の枠を緑のフルワイドボックスにし、坪単価が分かりやすく表示されるように改善
           if (data.siire_p || data.siire_m2) {
               html += `<div class="section-title">仕入分析</div><div class="view-grid">`;
-              html += vItem("購入価格", data.siire_p ? `${formatNumberWithComma(data.siire_p)} 万円 (${data.siire_basis||"-"})` : "");
-              html += vItem("仕入土地面積", data.siire_m2 ? `${formatAreaStrict(data.siire_m2)} ㎡ (${formatAreaStrict(data.siire_tsubo)} 坪)` : "");
               
               let siireP = parseFloat(removeComma(data.siire_p)) || 0;
               let siireTsubo = parseFloat(removeComma(data.siire_tsubo)) || 0;
+              let sUnitStr = "-";
               if (siireP > 0 && siireTsubo > 0) {
-                  let sUnit = Math.floor((siireP / siireTsubo) * 10) / 10;
-                  html += vItem("仕入坪単価", `${sUnit.toLocaleString()} 万円/坪`);
+                  let sUnit = Math.round((siireP / siireTsubo) * 10) / 10;
+                  // minimumFractionDigits で必ず小数第1位まで表示 (470 -> 470.0)
+                  sUnitStr = sUnit.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + " 万円/坪";
               }
+              
+              let basisStr = data.siire_basis ? ` <span style="font-size:11px; font-weight:normal; color:#666;">[根拠: ${data.siire_basis}]</span>` : "";
+              let priceText = data.siire_p ? `${formatNumberWithComma(data.siire_p)} 万円 （坪単価: ${sUnitStr}）${basisStr}` : `未入力 （坪単価: ${sUnitStr}）`;
+
+              html += `<div class="view-item full-width" style="background: #f6ffed; border-color: #b7eb8f;">
+                          <span style="color:#52c41a;">購入価格 （仕入坪単価）</span>
+                          <div style="color:#135200; font-size: 13px; font-weight: bold; margin-top:2px;">${priceText}</div>
+                       </div>`;
+                       
+              html += vItem("仕入土地面積", data.siire_m2 ? `${formatAreaStrict(data.siire_m2)} ㎡ (${formatAreaStrict(data.siire_tsubo)} 坪)` : "", true);
               html += `</div>`;
           }
 
@@ -1143,7 +1160,14 @@
         const sTsubo = Math.floor((siireM2 * 0.3025) * 100) / 100;
         
         document.getElementById('siire-tsubo').value = formatAreaStrict(sTsubo);
-        document.getElementById('val-siire-unit').innerText = (siireP > 0 && sTsubo > 0) ? (Math.floor((siireP / sTsubo) * 10) / 10).toLocaleString() + " 万円" : "- 万円";
+        
+        // ▼ 修正：編集パネルの仕入坪単価の計算を四捨五入とし、必ず小数第1位まで表示させる
+        if (siireP > 0 && sTsubo > 0) {
+            let sUnit = Math.round((siireP / sTsubo) * 10) / 10;
+            document.getElementById('val-siire-unit').innerText = sUnit.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + " 万円";
+        } else {
+            document.getElementById('val-siire-unit').innerText = "- 万円";
+        }
 
         const buildPriceInput = document.getElementById('build-price-input');
         const labelLand = document.getElementById('label-land');
@@ -1235,11 +1259,14 @@
         const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
         isSaving = true;
         document.getElementById("saving-overlay").style.display = "flex";
+        
+        const activeId = currentTabs[activeTabIndex]?.data?.id; // ▼修正：復元用にIDを控えておく
+        const activeLat = currentTabs[activeTabIndex]?.data?.lat;
+        const activeLng = currentTabs[activeTabIndex]?.data?.lng;
 
         try {
             const fName = buildFolderName();
             
-            // ★修正：多棟現場の場合、代表的な共通項目（座標、住所など）をすべてのタブに強制同期させる
             const baseData = currentTabs[activeTabIndex].data;
             const sharedKeys = ["lat", "lng", "name", "addr1", "addr2", "addr3", "gyosha", "shiten", "taiyou", "media", "intro_user", "kenpei", "youseki", "law", "road", "train_line", "train_station", "train_walk", "train_memo", "is_att"];
             currentTabs.forEach(t => {
@@ -1261,6 +1288,13 @@
             if(result.error) throw new Error(result.error);
             
             await fetchMapData(); 
+            
+            // ▼ 修正：保存完了後、元いたピンの強調状態を自動で復元させる
+            let newMarker = null;
+            if (activeId) newMarker = markersList.find(m => m.rowIds && m.rowIds.includes(activeId));
+            if (!newMarker && activeLat && activeLng) newMarker = markersList.find(m => Math.abs(m.position.lat - activeLat) < 0.00001 && Math.abs(m.position.lng - activeLng) < 0.00001);
+            if (newMarker) highlightMarker(newMarker);
+            
         } catch (e) { 
             if(e.message.includes("パスワードが正しくありません")) forceLogout();
             else alert("保存失敗: " + e.message); 
@@ -1330,17 +1364,16 @@
                       row["緯度"] = res.lat();
                       row["経度"] = res.lng();
                       updates.push({ id: row["ID"], lat: res.lat(), lng: res.lng() });
-                      await new Promise(r => setTimeout(r, 400)); // API制限回避のため少し待機
+                      await new Promise(r => setTimeout(r, 400));
                   } catch(e) { console.warn("Geocode failed for: " + addr); }
               }
           }
           if (updates.length > 0) {
-              // 取得した座標をGASに送って保存させる
               fetch(GAS_URL, {
                   method: "POST", headers: { "Content-Type": "text/plain" },
                   body: JSON.stringify({ mode: "update_coords", reqUser: getUser(), password: getPass(), data: updates })
               }).then(() => renderMarkers()).catch(()=>{});
-              renderMarkers(); // 現在の画面も更新
+              renderMarkers();
           }
       }
 
@@ -1358,7 +1391,6 @@
             }
             allData = result; 
             
-            // ★追加：座標がなくて住所だけあるデータを探して自動取得する
             const missingCoords = allData.filter(r => !r["緯度"] || !r["経度"]);
             if(missingCoords.length > 0) {
                 processMissingCoords(missingCoords);
@@ -1377,7 +1409,7 @@
 
         const groups = {};
         allData.forEach(row => {
-            if (!row["緯度"] || !row["経度"]) return; // 座標がないものはスキップ（後で自動取得される）
+            if (!row["緯度"] || !row["経度"]) return; 
             const isAtt = (row["注目継続"] === true || row["注目継続"] === "TRUE");
             if (onlyAtt && !isAtt) return;
 
