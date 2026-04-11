@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.18</title>
+    <title>不動産管理マップ v5.0.19</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -28,7 +28,7 @@
         #address-input { width: 180px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
         #search-btn { padding: 10px 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: bold; }
         
-        #filter-panel { position: absolute; top: 125px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+        #filter-panel { position: absolute; top: 125px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; font-size: 13px; width: 170px; }
         .filter-item { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #333; }
         .filter-item input { cursor: pointer; }
 
@@ -161,8 +161,33 @@
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="MS" checked> マンション (全)</label>
             <label class="filter-item"><input type="checkbox" class="layer-cb" value="査定" checked> 査定依頼</label>
             <hr style="width:100%; margin:4px 0; border:none; border-top:1px solid #ddd;">
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="SOLD" checked> 成約済</label>
-            <label class="filter-item" style="color:#007bff; font-weight:bold; margin-top:2px;"><input type="checkbox" id="layer-att"> ★ 注目継続のみ表示</label>
+            <label class="filter-item" style="color:#007bff; font-weight:bold; margin-top:2px;">
+                <input type="checkbox" id="layer-sold"> 成約物件も表示
+            </label>
+            <label class="filter-item" style="color:#007bff; font-weight:bold; margin-top:2px;">
+                <input type="checkbox" id="layer-att"> 注目物件のみ表示
+            </label>
+            
+            <div style="font-weight:bold; color:#1a73e8; margin:8px 0 2px; font-size:11px;">■ 日付・担当者 絞り込み</div>
+            <div style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #ddd;">
+                <select id="filter-date-type" style="width:100%; padding:4px; font-size:12px; border-radius:4px; border:1px solid #ccc; margin-bottom:4px; cursor:pointer;">
+                    <option value="更新日">更新日</option>
+                    <option value="入力日">入力日</option>
+                    <option value="成約日">成約日</option>
+                </select>
+                <div style="display:flex; align-items:center; gap:4px; margin-bottom:4px;">
+                    <input type="date" id="filter-date-start" style="width:100%; padding:2px; font-size:11px; border-radius:4px; border:1px solid #ccc;">
+                    <span style="font-size:10px;">〜</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                    <input type="date" id="filter-date-end" style="width:100%; padding:2px; font-size:11px; border-radius:4px; border:1px solid #ccc;">
+                    <button id="clear-date-btn" style="font-size:10px; padding:2px 4px; cursor:pointer; background:#fff; border:1px solid #ccc; border-radius:4px;">クリア</button>
+                </div>
+                <div style="font-size:10px; color:#555; margin-bottom:2px;">入力者:</div>
+                <select id="filter-user" style="width:100%; padding:4px; font-size:12px; border-radius:4px; border:1px solid #ccc; cursor:pointer;">
+                    <option value="">全ての入力者</option>
+                </select>
+            </div>
         </div>
 
         <div id="view-panel" class="side-panel">
@@ -170,7 +195,7 @@
                 <h3>🏠 物件詳細</h3>
                 <div class="header-actions">
                     <button id="view-att-btn" class="btn-action" onclick="toggleAttention()">★ 注目</button>
-                    <button class="btn-action" onclick="touchUpdate()">変更なし</button>
+                    <button class="btn-action" onclick="touchUpdate()">本日チェック/更新済</button>
                     <button class="btn-switch-edit" onclick="switchToEdit()">✏️ 編集</button>
                     <button class="btn-close-view" onclick="closePanel()">✖</button>
                 </div>
@@ -185,7 +210,7 @@
                     <h3>✏️ 物件登録・編集</h3>
                     <div class="header-actions">
                         <button id="edit-att-btn" class="btn-action" onclick="toggleAttention()">★ 注目</button>
-                        <button class="btn-action" onclick="touchUpdate()">変更なし</button>
+                        <button class="btn-action" onclick="submitForm()">本日チェック/更新済</button>
                         <button class="btn-switch-edit" onclick="switchToView()" style="color:#1565c0; border-color:#1565c0;">👁️ 閲覧</button>
                         <button class="btn-close-view" onclick="closePanel()">✖</button>
                     </div>
@@ -368,7 +393,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbxoxUujNhPvrzifRZovwVbDZcWg_KQhkf93J1Y27CkDOXbZicw1YwoSBjDytyqq5dfO/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbzESTbAZ8Wh3FDr-jTQbgKw0cEoi9Gp452EKLNBkogLDx7eWoMWyc26GPeBtSN-m5KW/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -873,13 +898,16 @@
           html += `<div class="section-title">面積・間取り</div><div class="view-grid">`;
           html += vItem("土地面積", data.t_m2 ? `${formatAreaStrict(data.t_m2)} ㎡ (${formatAreaStrict(data.t_tsubo)} 坪)` : "");
           html += vItem("建物面積", data.b_m2 ? `${formatAreaStrict(data.b_m2)} ㎡ (${formatAreaStrict(data.b_tsubo)} 坪)` : "");
-          html += vItem("敷地条件・間取り", data.layout);
+          
+          // ▼「敷地条件・間取り」を幅広（2カラム）に変更
+          html += vItem("敷地条件・間取り", data.layout, true);
           
           if(patternA.includes(type) && subPStr !== "") {
               let buildText = `${formatNumberWithComma(subPStr)} 万円`;
               if (subP > 0 && bTsubo > 0) {
                   let bUnit = subP / bTsubo;
-                  buildText += `<span style="font-weight:normal; color:#c41d7f;">（坪単価：${bUnit.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪）</span>`;
+                  // ▼「坪単価」を価格の横に、同じ大きさの赤い文字で表示するように変更
+                  buildText += `<span style="font-weight:bold; color:#c41d7f; margin-left:12px; font-size:13px;">（坪単価：${bUnit.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪）</span>`;
               }
               html += vItem("建物想定価格", buildText, true); 
           }
@@ -919,12 +947,17 @@
                   sUnitStr = sUnit.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + " 万円/坪";
               }
               
-              let basisStr = data.siire_basis ? ` <span style="font-size:11px; font-weight:normal; color:#666;">[根拠: ${data.siire_basis}]</span>` : "";
-              let priceText = data.siire_p ? `${formatNumberWithComma(data.siire_p)} 万円 （坪単価: ${sUnitStr}）${basisStr}` : `未入力 （坪単価: ${sUnitStr}）`;
+              let basisStr = data.siire_basis ? ` <span style="font-size:11px; font-weight:normal; color:#666; margin-left:10px;">[根拠: ${data.siire_basis}]</span>` : "";
+              let priceText = data.siire_p ? `${formatNumberWithComma(data.siire_p)} 万円` : `未入力`;
+              
+              // ▼「購入価格」の坪単価を黄色背景・赤文字・大きめサイズに変更
+              let empUnit = `<span style="background:#fffbe6; color:#cf1322; padding:4px 8px; border-radius:6px; border:1px solid #ffe58f; font-size:16px; margin-left:12px; display:inline-block;">坪単価: ${sUnitStr}</span>`;
 
               html += `<div class="view-item full-width" style="background: #f6ffed; border-color: #b7eb8f;">
                           <span style="color:#52c41a;">購入価格 （仕入坪単価）</span>
-                          <div style="color:#135200; font-size: 13px; font-weight: bold; margin-top:2px;">${priceText}</div>
+                          <div style="color:#135200; font-size: 14px; font-weight: bold; margin-top:6px; display:flex; align-items:center; flex-wrap:wrap;">
+                              ${priceText} ${empUnit} ${basisStr}
+                          </div>
                        </div>`;
                        
               html += vItem("仕入土地面積", data.siire_m2 ? `${formatAreaStrict(data.siire_m2)} ㎡ (${formatAreaStrict(data.siire_tsubo)} 坪)` : "", true);
@@ -1397,6 +1430,20 @@
             if(missingCoords.length > 0) {
                 processMissingCoords(missingCoords);
             }
+
+            // ▼ 入力者の動的リスト生成
+            const userSelect = document.getElementById('filter-user');
+            const currentUser = userSelect.value;
+            const users = new Set();
+            allData.forEach(row => {
+                if (row["入力者"]) users.add(row["入力者"].toString().trim());
+            });
+            let optionsHtml = `<option value="">全ての入力者</option>`;
+            Array.from(users).sort().forEach(u => {
+                if(u) optionsHtml += `<option value="${u}">${u}</option>`;
+            });
+            userSelect.innerHTML = optionsHtml;
+            userSelect.value = currentUser;
             
             renderMarkers(); 
         } catch (e) { alert("通信エラーが発生しました。GASのURLが正しいか確認してください。"); }
@@ -1407,32 +1454,63 @@
         markersList.forEach(m => m.map = null); markersList = [];
         
         const activeFilters = Array.from(document.querySelectorAll('.layer-cb:checked')).map(cb => cb.value);
+        const showSold = document.getElementById('layer-sold') ? document.getElementById('layer-sold').checked : false;
         const onlyAtt = document.getElementById('layer-att') ? document.getElementById('layer-att').checked : false;
+        
+        const dateType = document.getElementById('filter-date-type').value;
+        const dateStart = document.getElementById('filter-date-start').value;
+        const dateEnd = document.getElementById('filter-date-end').value;
+        const filterUser = document.getElementById('filter-user').value;
 
         const groups = {};
         allData.forEach(row => {
             if (!row["緯度"] || !row["経度"]) return; 
+            
+            // 1. 成約済フィルターのチェック
+            const isSold = (row["成約フラグ"] === true || row["成約フラグ"] === "TRUE");
+            if (isSold && !showSold) return;
+
+            // 2. 物件種別フィルターのチェック
+            let isVisible = false;
+            const t = row["物件種別"] || "";
+            if (t.includes("情開")) isVisible = activeFilters.includes("自社（情開）");
+            else if (t.includes("自社")) isVisible = activeFilters.includes("自社物件");
+            else if (t.includes("MS")) isVisible = activeFilters.includes("MS");
+            else if (t.includes("査定")) isVisible = activeFilters.includes("査定");
+            else if (t === "新築戸建") isVisible = activeFilters.includes("新築戸建");
+            else if (t === "中古戸建") isVisible = activeFilters.includes("中古戸建");
+            else if (t === "売地") isVisible = activeFilters.includes("売地");
+            else isVisible = true;
+
+            if (!isVisible) return;
+
+            // 3. 注目フィルターのチェック
             const isAtt = (row["注目継続"] === true || row["注目継続"] === "TRUE");
             if (onlyAtt && !isAtt) return;
 
-            let isVisible = false;
-            const isSold = (row["成約フラグ"] === true || row["成約フラグ"] === "TRUE");
-            
-            if (isSold) {
-                isVisible = activeFilters.includes("SOLD");
-            } else {
-                const t = row["物件種別"] || "";
-                if (t.includes("情開")) isVisible = activeFilters.includes("自社（情開）");
-                else if (t.includes("自社")) isVisible = activeFilters.includes("自社物件");
-                else if (t.includes("MS")) isVisible = activeFilters.includes("MS");
-                else if (t.includes("査定")) isVisible = activeFilters.includes("査定");
-                else if (t === "新築戸建") isVisible = activeFilters.includes("新築戸建");
-                else if (t === "中古戸建") isVisible = activeFilters.includes("中古戸建");
-                else if (t === "売地") isVisible = activeFilters.includes("売地");
-                else isVisible = true;
-            }
+            // 4. 入力者フィルターのチェック
+            if (filterUser && row["入力者"] !== filterUser) return;
 
-            if (!isVisible) return;
+            // 5. 日付フィルターのチェック
+            if (dateStart || dateEnd) {
+                let targetVal = row[dateType];
+                if (!targetVal) return; 
+                
+                let targetDate = new Date(targetVal);
+                if (isNaN(targetDate.getTime())) return;
+                targetDate.setHours(0,0,0,0);
+                
+                if (dateStart) {
+                    let s = new Date(dateStart);
+                    s.setHours(0,0,0,0);
+                    if (targetDate < s) return;
+                }
+                if (dateEnd) {
+                    let e = new Date(dateEnd);
+                    e.setHours(0,0,0,0);
+                    if (targetDate > e) return;
+                }
+            }
 
             const key = `${Number(row["緯度"]).toFixed(6)}_${Number(row["経度"]).toFixed(6)}`;
             if (!groups[key]) groups[key] = []; 
@@ -1525,9 +1603,19 @@
             });
         });
 
-        if(document.getElementById('layer-att')) {
-            document.getElementById('layer-att').addEventListener('change', renderMarkers);
-        }
+        if(document.getElementById('layer-sold')) document.getElementById('layer-sold').addEventListener('change', renderMarkers);
+        if(document.getElementById('layer-att')) document.getElementById('layer-att').addEventListener('change', renderMarkers);
+        
+        document.getElementById('filter-date-type').addEventListener('change', renderMarkers);
+        document.getElementById('filter-date-start').addEventListener('change', renderMarkers);
+        document.getElementById('filter-date-end').addEventListener('change', renderMarkers);
+        document.getElementById('filter-user').addEventListener('change', renderMarkers);
+        
+        document.getElementById('clear-date-btn').addEventListener('click', () => {
+            document.getElementById('filter-date-start').value = "";
+            document.getElementById('filter-date-end').value = "";
+            renderMarkers();
+        });
 
         const container = document.getElementById("form-container");
         container.addEventListener('input', (e) => {
