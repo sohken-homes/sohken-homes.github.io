@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.19</title>
+    <title>不動産管理マップ v5.0.20</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -176,11 +176,11 @@
                     <option value="成約日">成約日</option>
                 </select>
                 <div style="display:flex; align-items:center; gap:4px; margin-bottom:4px;">
-                    <input type="date" id="filter-date-start" style="width:100%; padding:2px; font-size:11px; border-radius:4px; border:1px solid #ccc;">
+                    <input type="text" id="filter-date-start" class="date-input filter-date" placeholder="年/月/日" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; text-align:center;">
                     <span style="font-size:10px;">〜</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:4px; margin-bottom:6px;">
-                    <input type="date" id="filter-date-end" style="width:100%; padding:2px; font-size:11px; border-radius:4px; border:1px solid #ccc;">
+                    <input type="text" id="filter-date-end" class="date-input filter-date" placeholder="年/月/日" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; text-align:center;">
                     <button id="clear-date-btn" style="font-size:10px; padding:2px 4px; cursor:pointer; background:#fff; border:1px solid #ccc; border-radius:4px;">クリア</button>
                 </div>
                 <div style="font-size:10px; color:#555; margin-bottom:2px;">入力者:</div>
@@ -898,18 +898,21 @@
           html += `<div class="section-title">面積・間取り</div><div class="view-grid">`;
           html += vItem("土地面積", data.t_m2 ? `${formatAreaStrict(data.t_m2)} ㎡ (${formatAreaStrict(data.t_tsubo)} 坪)` : "");
           html += vItem("建物面積", data.b_m2 ? `${formatAreaStrict(data.b_m2)} ㎡ (${formatAreaStrict(data.b_tsubo)} 坪)` : "");
-          
-          // ▼「敷地条件・間取り」を幅広（2カラム）に変更
           html += vItem("敷地条件・間取り", data.layout, true);
           
           if(patternA.includes(type) && subPStr !== "") {
-              let buildText = `${formatNumberWithComma(subPStr)} 万円`;
+              let buildHtml = "";
               if (subP > 0 && bTsubo > 0) {
                   let bUnit = subP / bTsubo;
-                  // ▼「坪単価」を価格の横に、同じ大きさの赤い文字で表示するように変更
-                  buildText += `<span style="font-weight:bold; color:#c41d7f; margin-left:12px; font-size:13px;">（坪単価：${bUnit.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪）</span>`;
+                  // ▼「建物想定価格」の坪単価を価格のすぐ横に、確実に同じ行・同じ文字サイズで表示する
+                  buildHtml = `<div style="display:flex; align-items:baseline; flex-wrap:wrap; gap:8px;">
+                                  <span>${formatNumberWithComma(subPStr)} 万円</span>
+                                  <span style="font-weight:bold; color:#c41d7f; font-size:13px;">（坪単価：${bUnit.toLocaleString(undefined, {maximumFractionDigits: 1})} 万円/坪）</span>
+                               </div>`;
+              } else {
+                  buildHtml = `${formatNumberWithComma(subPStr)} 万円`;
               }
-              html += vItem("建物想定価格", buildText, true); 
+              html += vItem("建物想定価格", buildHtml, true); 
           }
           html += `</div>`;
 
@@ -950,7 +953,6 @@
               let basisStr = data.siire_basis ? ` <span style="font-size:11px; font-weight:normal; color:#666; margin-left:10px;">[根拠: ${data.siire_basis}]</span>` : "";
               let priceText = data.siire_p ? `${formatNumberWithComma(data.siire_p)} 万円` : `未入力`;
               
-              // ▼「購入価格」の坪単価を黄色背景・赤文字・大きめサイズに変更
               let empUnit = `<span style="background:#fffbe6; color:#cf1322; padding:4px 8px; border-radius:6px; border:1px solid #ffe58f; font-size:16px; margin-left:12px; display:inline-block;">坪単価: ${sUnitStr}</span>`;
 
               html += `<div class="view-item full-width" style="background: #f6ffed; border-color: #b7eb8f;">
@@ -1431,7 +1433,6 @@
                 processMissingCoords(missingCoords);
             }
 
-            // ▼ 入力者の動的リスト生成
             const userSelect = document.getElementById('filter-user');
             const currentUser = userSelect.value;
             const users = new Set();
@@ -1607,9 +1608,21 @@
         if(document.getElementById('layer-att')) document.getElementById('layer-att').addEventListener('change', renderMarkers);
         
         document.getElementById('filter-date-type').addEventListener('change', renderMarkers);
-        document.getElementById('filter-date-start').addEventListener('change', renderMarkers);
-        document.getElementById('filter-date-end').addEventListener('change', renderMarkers);
         document.getElementById('filter-user').addEventListener('change', renderMarkers);
+        
+        // ▼ 日付フィルターの入力を自動変換（Enterキーまたは入力欄から離れた際に発動）
+        ['filter-date-start', 'filter-date-end'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('blur', (e) => {
+                    e.target.value = formatToFullDate(e.target.value);
+                    renderMarkers();
+                });
+                el.addEventListener('keydown', (e) => {
+                    if(e.key === 'Enter') e.target.blur();
+                });
+            }
+        });
         
         document.getElementById('clear-date-btn').addEventListener('click', () => {
             document.getElementById('filter-date-start').value = "";
