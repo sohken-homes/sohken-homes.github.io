@@ -102,7 +102,6 @@
         .file-actions button { font-size: 10px; padding: 2px 6px; margin-left: 4px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: white; }
         .file-actions button.del { color: #cf1322; border-color: #ffa39e; }
 
-        /* ▼ 修正：マーカー強調をより目立つ赤色＆太い波紋に強化 */
         .active-marker { outline: 5px solid #e53935; outline-offset: 3px; border-radius: 50%; box-shadow: 0 0 20px rgba(229, 57, 53, 0.9); animation: pulse 1s infinite; background-color: rgba(255, 255, 255, 0.8); }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.8); }
@@ -350,7 +349,11 @@
                         <div class="flex-item"><label>土地面積(㎡)</label><input type="text" id="siire-m2" placeholder="0.00" class="comma-input area-input only-num"></div>
                         <div class="flex-item"><label>土地面積(坪)</label><input type="text" id="siire-tsubo" placeholder="0.00" class="comma-input area-input" readonly></div>
                     </div>
-                    <div class="siire-unit-box" style="margin-top:10px;"><label style="font-size:11px; color:#52c41a;">仕入坪単価：</label><span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span></div>
+                    <div class="siire-unit-box" style="margin-top:10px;">
+                        <label style="font-size:11px; color:#52c41a;">仕入坪単価：</label>
+                        <span id="val-siire-unit" style="font-size:16px; font-weight:bold; color:#135200;">- 万円</span>
+                        <input type="hidden" id="siire-unit-val">
+                    </div>
                 </div>
 
                 <button class="btn-save" onclick="submitForm()">保存</button>
@@ -365,7 +368,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbykcqd1v-SQq605en1lETl2NZYZ1xIWPkXZpegCr-CVKRLZGS4prQSqHv-ICbOvLFQj/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbyA_SHdbZ1flv4XhaSX6R9_UI9-ANAoDOPIf2E-lT_7h5jtVoiVsovZY-QcIXBlPQiS/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -441,7 +444,7 @@
           "form-kenpei":"kenpei", "form-youseki":"youseki", "form-law":"law", "form-road":"road",
           "form-train-line":"train_line", "form-train-station":"train_station", "form-train-walk":"train_walk", "form-train-memo":"train_memo",
           "form-url1":"url1", "form-url2":"url2", "form-memo":"memo", "form-user":"user",
-          "siire-price":"siire_p", "siire-m2":"siire_m2", "siire-basis":"siire_basis",
+          "siire-price":"siire_p", "siire-m2":"siire_m2", "siire-tsubo":"siire_tsubo", "siire-unit-val":"siire_unit", "siire-basis":"siire_basis",
           "form-is-att":"is_att"
       };
 
@@ -590,13 +593,13 @@
               const data = {};
               const sheetToKey = {
                   "ID":"id", "緯度":"lat", "経度":"lng", "物件種別":"type", "物件名称":"name", "区画名":"tab_name", "市・区":"addr1", "所在（丁目まで）":"addr2", "住居表示（丁目以降）":"addr3",
-                  "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成約フラグ":"is_sold", "成フラグ":"is_sold",
+                  "初回価格入力日":"d_first", "販売価格（初回入力時/万円）":"p_first", "変更日1":"d_c1", "変更価格１（万円）":"p_c1", "変更日2":"d_c2", "変更価格２（万円）":"p_c2", "変更日3":"d_c3", "変更価格３（万円）":"p_c3", "成約日":"d_s", "成約価格（万円）":"p_s", "価格推移備考":"price_memo", "成約フラグ":"is_sold",
                   "地積（㎡）":"t_m2", "地積（坪）":"t_tsubo", "床面積（㎡）":"b_m2", "床面積（坪）":"b_tsubo", "敷地条件・間取り":"layout", "建物価格入力用":"sub_p",
                   "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
                   "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road",
                   "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
                   "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
-                  "購入価格":"siire_p", "仕入土地面積":"siire_m2", "購入根拠":"siire_basis",
+                  "購入価格":"siire_p", "仕入坪単価":"siire_unit", "仕入土地面積（㎡）":"siire_m2", "仕入土地面積（坪）":"siire_tsubo", "購入根拠":"siire_basis",
                   "ドライブURL":"drive_url", "マップURL":"map_url", "注目継続":"is_att"
               };
               Object.keys(sheetToKey).forEach(s => { if (r[s] !== undefined) data[sheetToKey[s]] = r[s]; });
@@ -709,7 +712,6 @@
               });
               await fetchMapData();
               
-              // ▼ 修正：更新完了後、元いたピンの強調状態を自動で復元させる
               let newMarker = null;
               if (activeId) newMarker = markersList.find(m => m.rowIds && m.rowIds.includes(activeId));
               if (!newMarker && activeLat && activeLng) newMarker = markersList.find(m => Math.abs(m.position.lat - activeLat) < 0.00001 && Math.abs(m.position.lng - activeLng) < 0.00001);
@@ -906,7 +908,6 @@
                        ${data.drive_url ? `<div style="color:#666; text-align:center; font-size:12px;">ファイルを読み込み中...</div>` : `<div style='color:#999; text-align:center; font-size:12px;'>ファイルはまだありません</div>`}
                    </div>`;
 
-          // ▼ 修正：閲覧パネルの仕入分析の枠を緑のフルワイドボックスにし、坪単価が分かりやすく表示されるように改善
           if (data.siire_p || data.siire_m2) {
               html += `<div class="section-title">仕入分析</div><div class="view-grid">`;
               
@@ -915,7 +916,6 @@
               let sUnitStr = "-";
               if (siireP > 0 && siireTsubo > 0) {
                   let sUnit = Math.round((siireP / siireTsubo) * 10) / 10;
-                  // minimumFractionDigits で必ず小数第1位まで表示 (470 -> 470.0)
                   sUnitStr = sUnit.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + " 万円/坪";
               }
               
@@ -1161,12 +1161,13 @@
         
         document.getElementById('siire-tsubo').value = formatAreaStrict(sTsubo);
         
-        // ▼ 修正：編集パネルの仕入坪単価の計算を四捨五入とし、必ず小数第1位まで表示させる
         if (siireP > 0 && sTsubo > 0) {
             let sUnit = Math.round((siireP / sTsubo) * 10) / 10;
             document.getElementById('val-siire-unit').innerText = sUnit.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + " 万円";
+            if(document.getElementById('siire-unit-val')) document.getElementById('siire-unit-val').value = sUnit;
         } else {
             document.getElementById('val-siire-unit').innerText = "- 万円";
+            if(document.getElementById('siire-unit-val')) document.getElementById('siire-unit-val').value = "";
         }
 
         const buildPriceInput = document.getElementById('build-price-input');
@@ -1260,7 +1261,7 @@
         isSaving = true;
         document.getElementById("saving-overlay").style.display = "flex";
         
-        const activeId = currentTabs[activeTabIndex]?.data?.id; // ▼修正：復元用にIDを控えておく
+        const activeId = currentTabs[activeTabIndex]?.data?.id; 
         const activeLat = currentTabs[activeTabIndex]?.data?.lat;
         const activeLng = currentTabs[activeTabIndex]?.data?.lng;
 
@@ -1289,7 +1290,6 @@
             
             await fetchMapData(); 
             
-            // ▼ 修正：保存完了後、元いたピンの強調状態を自動で復元させる
             let newMarker = null;
             if (activeId) newMarker = markersList.find(m => m.rowIds && m.rowIds.includes(activeId));
             if (!newMarker && activeLat && activeLng) newMarker = markersList.find(m => Math.abs(m.position.lat - activeLat) < 0.00001 && Math.abs(m.position.lng - activeLng) < 0.00001);
