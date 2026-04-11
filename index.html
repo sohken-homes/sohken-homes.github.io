@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.22</title>
+    <title>不動産管理マップ v5.0.23</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -1450,31 +1450,43 @@
         } catch (e) { alert("通信エラーが発生しました。GASのURLが正しいか確認してください。"); }
       }
 
-      // ▼ クラスターのカスタムデザイン（色付け・アニメーション）設定
+// ▼ クラスターのカスタムデザイン（色付け・アニメーション・数字の復活）設定
       const customClusterRenderer = {
           render: ({ count, position, markers }) => {
               const hasActive = currentEditingMarker && markers.includes(currentEditingMarker);
               const hasAttention = markers.some(m => m.isAtt);
 
               const div = document.createElement("div");
+              div.innerText = count; // ←【修正】ここに数字（件数）を入れる記述を追加しました！
+
+              // 基本のスタイル
               div.style.width = "36px";
               div.style.height = "36px";
-              div.style.backgroundColor = hasActive ? "rgba(229, 57, 53, 0.9)" : (hasAttention ? "rgba(26, 115, 232, 0.9)" : "rgba(0, 91, 150, 0.8)");
-              div.style.border = "2px solid white";
               div.style.borderRadius = "50%";
-              div.style.color = "white";
               div.style.display = "flex";
               div.style.alignItems = "center";
               div.style.justifyContent = "center";
               div.style.fontSize = "14px";
               div.style.fontWeight = "bold";
-              
+              div.style.color = "white";
+
               if (hasActive) {
+                  // 選択中の物件が含まれる場合：赤色＋赤い波紋アニメーション
+                  div.style.backgroundColor = "rgba(229, 57, 53, 0.9)";
+                  div.style.border = "2px solid white";
                   div.style.boxShadow = "0 0 20px rgba(229, 57, 53, 0.9)";
                   div.style.animation = "pulse 1s infinite";
               } else if (hasAttention) {
-                  div.style.boxShadow = "0 0 0 4px rgba(26, 115, 232, 0.5)"; // 注目物件が含まれるクラスターは青いリング
+                  // 注目物件が含まれる場合：通常の色＋外側を青い線で囲む（ご提案のデザイン！）
+                  div.style.backgroundColor = "rgba(0, 91, 150, 0.8)";
+                  div.style.border = "2px solid white";
+                  div.style.outline = "4px solid rgba(26, 115, 232, 0.8)"; // 外側の青いリング
+                  div.style.outlineOffset = "2px"; // リングと本体の隙間
+                  div.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
               } else {
+                  // 通常のクラスター
+                  div.style.backgroundColor = "rgba(0, 91, 150, 0.8)";
+                  div.style.border = "2px solid white";
                   div.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
               }
 
