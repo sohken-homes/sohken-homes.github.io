@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.25</title>
+    <title>不動産管理マップ v5.0.26</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -28,8 +28,8 @@
         #address-input { width: 180px; padding: 10px 15px; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; outline: none; }
         #search-btn { padding: 10px 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: bold; }
         
-        #filter-panel { position: absolute; top: 125px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; font-size: 13px; width: 170px; }
-        .filter-item { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #333; }
+        #filter-panel { position: absolute; top: 125px; left: 10px; z-index: 5; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; font-size: 13px; width: 170px; }
+        .filter-item { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #333; margin-bottom: 6px; }
         .filter-item input { cursor: pointer; }
 
         .side-panel { display: none !important; position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 0; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 440px; max-height: 95vh; overflow: hidden; flex-direction: column; }
@@ -45,9 +45,10 @@
         .btn-switch-edit:hover { background: #e8f0fe; }
         .btn-close-view { background: #f1f3f4; border: none; color: #5f6368; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-left: 2px; font-weight: bold; }
         
-        .tab-container { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
-        .tab-container::-webkit-scrollbar { display: none; }
-        .tab { padding: 6px 12px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; font-size: 12px; color: #5f6368; white-space: nowrap; margin-top: 5px; }
+        .tab-container { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid #ddd; overflow-x: auto; flex-shrink: 0; scrollbar-width: thin; scrollbar-color: #ccc transparent; }
+        .tab-container::-webkit-scrollbar { height: 6px; }
+        .tab-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        .tab { flex-shrink: 0; padding: 6px 12px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; font-size: 12px; color: #5f6368; white-space: nowrap; margin-top: 5px; }
         .tab.active { font-weight: bold; position: relative; top: 1px; color: #1a73e8; }
         .tab-add { color: #188038; font-weight: bold; background: #e6f4ea; border-radius: 6px; margin-bottom: 5px;}
 
@@ -149,45 +150,50 @@
         </div>
 
         <div id="filter-panel">
-            <div style="color:#1a73e8; font-weight:bold; margin-bottom:4px; font-size:12px;">■ 表示レイヤ</div>
-            <label class="filter-item" style="font-weight:bold; border-bottom:1px solid #ccc; padding-bottom:6px; margin-bottom:4px;">
-                <input type="checkbox" id="layer-all" checked> 全て表示
-            </label>
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="新築戸建" checked> 新築戸建</label>
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="中古戸建" checked> 中古戸建</label>
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="売地" checked> 売地</label>
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="自社物件" checked> 自社物件</label>
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="自社（情開）" checked> 自社（情開）</label>
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="MS" checked> マンション (全)</label>
-            <label class="filter-item"><input type="checkbox" class="layer-cb" value="査定" checked> 査定依頼</label>
-            <hr style="width:100%; margin:4px 0; border:none; border-top:1px solid #ddd;">
-            <label class="filter-item" style="color:#007bff; font-weight:bold; margin-top:2px;">
-                <input type="checkbox" id="layer-sold"> 成約物件も表示
-            </label>
-            <label class="filter-item" style="color:#007bff; font-weight:bold; margin-top:2px;">
-                <input type="checkbox" id="layer-att"> 注目物件のみ表示
-            </label>
-            
-            <div style="font-weight:bold; color:#1a73e8; margin:8px 0 2px; font-size:11px;">■ 日付・担当者 絞り込み</div>
-            <div style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #ddd;">
-                <select id="filter-date-type" style="width:100%; padding:4px; font-size:12px; border-radius:4px; border:1px solid #ccc; margin-bottom:4px; cursor:pointer;">
-                    <option value="更新日">更新日</option>
-                    <option value="入力日">入力日</option>
-                    <option value="成約日">成約日</option>
-                    <option value="初回価格入力日">初回価格入力日</option>
-                </select>
-                <div style="display:flex; align-items:center; gap:4px; margin-bottom:4px;">
-                    <input type="text" id="filter-date-start" class="date-input filter-date" placeholder="年/月/日" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; text-align:center;">
-                    <span style="font-size:10px;">〜</span>
+            <div onclick="toggleFilterPanel()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ccc; padding-bottom:6px; margin-bottom:8px;">
+                <div style="color:#1a73e8; font-weight:bold; font-size:12px;">■ 表示レイヤ・絞り込み</div>
+                <span id="filter-toggle-icon" style="color:#1a73e8; font-size:10px; font-weight:bold;">▼</span>
+            </div>
+            <div id="filter-panel-content">
+                <label class="filter-item" style="font-weight:bold; border-bottom:1px solid #eee; padding-bottom:6px; margin-bottom:6px;">
+                    <input type="checkbox" id="layer-all" checked> 全て表示
+                </label>
+                <label class="filter-item"><input type="checkbox" class="layer-cb" value="新築戸建" checked> 新築戸建</label>
+                <label class="filter-item"><input type="checkbox" class="layer-cb" value="中古戸建" checked> 中古戸建</label>
+                <label class="filter-item"><input type="checkbox" class="layer-cb" value="売地" checked> 売地</label>
+                <label class="filter-item"><input type="checkbox" class="layer-cb" value="自社物件" checked> 自社物件</label>
+                <label class="filter-item"><input type="checkbox" class="layer-cb" value="自社（情開）" checked> 自社（情開）</label>
+                <label class="filter-item"><input type="checkbox" class="layer-cb" value="MS" checked> マンション (全)</label>
+                <label class="filter-item"><input type="checkbox" class="layer-cb" value="査定" checked> 査定依頼</label>
+                <hr style="width:100%; margin:6px 0; border:none; border-top:1px solid #ddd;">
+                <label class="filter-item" style="color:#007bff; font-weight:bold;">
+                    <input type="checkbox" id="layer-sold"> 成約物件も表示
+                </label>
+                <label class="filter-item" style="color:#007bff; font-weight:bold; margin-bottom:10px;">
+                    <input type="checkbox" id="layer-att"> 注目物件のみ表示
+                </label>
+                
+                <div style="font-weight:bold; color:#1a73e8; margin:8px 0 2px; font-size:11px;">■ 日付・担当者</div>
+                <div style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #ddd;">
+                    <select id="filter-date-type" style="width:100%; padding:4px; font-size:12px; border-radius:4px; border:1px solid #ccc; margin-bottom:4px; cursor:pointer;">
+                        <option value="更新日">更新日</option>
+                        <option value="入力日">入力日</option>
+                        <option value="成約日">成約日</option>
+                        <option value="初回価格入力日">初回価格入力日</option>
+                    </select>
+                    <div style="display:flex; align-items:center; gap:4px; margin-bottom:4px;">
+                        <input type="text" id="filter-date-start" class="date-input filter-date" placeholder="年/月/日" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; text-align:center;">
+                        <span style="font-size:10px;">〜</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                        <input type="text" id="filter-date-end" class="date-input filter-date" placeholder="年/月/日" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; text-align:center;">
+                        <button id="clear-date-btn" style="font-size:10px; padding:2px 4px; cursor:pointer; background:#fff; border:1px solid #ccc; border-radius:4px;">クリア</button>
+                    </div>
+                    <div style="font-size:10px; color:#555; margin-bottom:2px;">入力者:</div>
+                    <select id="filter-user" style="width:100%; padding:4px; font-size:12px; border-radius:4px; border:1px solid #ccc; cursor:pointer;">
+                        <option value="">全ての入力者</option>
+                    </select>
                 </div>
-                <div style="display:flex; align-items:center; gap:4px; margin-bottom:6px;">
-                    <input type="text" id="filter-date-end" class="date-input filter-date" placeholder="年/月/日" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; text-align:center;">
-                    <button id="clear-date-btn" style="font-size:10px; padding:2px 4px; cursor:pointer; background:#fff; border:1px solid #ccc; border-radius:4px;">クリア</button>
-                </div>
-                <div style="font-size:10px; color:#555; margin-bottom:2px;">入力者:</div>
-                <select id="filter-user" style="width:100%; padding:4px; font-size:12px; border-radius:4px; border:1px solid #ccc; cursor:pointer;">
-                    <option value="">全ての入力者</option>
-                </select>
             </div>
         </div>
 
@@ -477,6 +483,19 @@
       window.addEventListener('load', () => {
           if (sessionStorage.getItem("mapAuthStatus") === "authorized") showAppScreen();
       });
+
+      // フィルタパネルの折り畳み処理
+      window.toggleFilterPanel = () => {
+          const content = document.getElementById('filter-panel-content');
+          const icon = document.getElementById('filter-toggle-icon');
+          if (content.style.display === 'none') {
+              content.style.display = 'block';
+              icon.innerText = '▼';
+          } else {
+              content.style.display = 'none';
+              icon.innerText = '▲';
+          }
+      };
 
       const FORM_MAP = {
           "form-id":"id", "form-lat":"lat", "form-lng":"lng", "form-type":"type", "form-name":"name", "form-tab-name":"tab_name",
@@ -1058,7 +1077,9 @@
       function addTab() {
         saveCurrentTabData();
         const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
-        baseData.id = ""; baseData.tab_name = `区画${currentTabs.length + 1}`;
+        // ▼ 修正ポイント：タブ追加時にフロントエンド側で明示的にIDを生成してセットする
+        baseData.id = generateUUID(); 
+        baseData.tab_name = `区画${currentTabs.length + 1}`;
         ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold", "d_first", "d_c1", "d_c2", "d_c3", "d_s", "user"].forEach(k => baseData[k] = "");
         baseData.is_att = false; baseData.user = getUser();
         currentTabs.push({ label: baseData.tab_name, data: baseData });
