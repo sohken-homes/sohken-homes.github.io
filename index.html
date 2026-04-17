@@ -394,7 +394,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbzESTbAZ8Wh3FDr-jTQbgKw0cEoi9Gp452EKLNBkogLDx7eWoMWyc26GPeBtSN-m5KW/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbw91R5pXOMK5xYaxGbeOEXVl-fNjKtwoL8geNx9JEtbH5-vNbmSBfjq1oqxQhecfkF6/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -1133,46 +1133,55 @@
       dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
       document.getElementById('file-input').addEventListener('change', (e) => handleFiles(e.target.files));
 
-      // ▼ 複数ファイルアップロードが順番に確実に処理されるように修正
+      // ▼ 【修正版】ファイルを並列で一斉アップロードする処理 ▼
       async function handleFiles(files) {
-          saveCurrentTabData(); 
-          for (let i = 0; i < files.length; i++) {
-              await uploadFile(files[i]);
-          }
-      }
+          saveCurrentTabData();
+          const addr1 = currentTabs[0].data.addr1 || "";
+          const addr2 = currentTabs[0].data.addr2 || "";
+          const folderName = buildFolderName();
+          const groupId = currentTabs[0].data.id;
+          const listEl = document.getElementById('file-list');
 
-      function uploadFile(file) {
-          return new Promise((resolve) => {
-              const addr1 = currentTabs[0].data.addr1 || "";
-              const addr2 = currentTabs[0].data.addr2 || ""; 
-              const folderName = buildFolderName();
-              const groupId = currentTabs[0].data.id;
-              
-              const listEl = document.getElementById('file-list');
-              listEl.innerHTML = `<div style="color:#1a73e8; text-align:center;">送信中: ${file.name}...</div>` + listEl.innerHTML;
-              
-              const reader = new FileReader();
-              reader.onload = async (e) => {
-                  try {
-                      const res = await fetch(GAS_URL, {
-                          method: "POST",
-                          headers: { "Content-Type": "text/plain" },
-                          body: JSON.stringify({ mode: "upload_file", reqUser: getUser(), password: getPass(), addr1, addr2, folderName, groupId, filename: file.name, data: e.target.result })
-                      });
-                      const result = await res.json();
-                      if (result.error) throw new Error(result.error);
-                      await refreshFileList();
-                  } catch (err) { 
-                      if(err.message.includes("パスワードが正しくありません")) forceLogout();
-                      else { alert("アップロード失敗: " + err.message); refreshFileList(); }
-                  } finally {
-                      resolve();
-                  }
-              };
-              reader.onerror = () => resolve();
-              reader.readAsDataURL(file);
+          // 1. 最初にGASを呼び出して、フォルダIDを「1回だけ」取得（または作成）する
+          listEl.innerHTML = "<div style='color:#1a73e8; text-align:center;'>フォルダを準備中...</div>" + listEl.innerHTML;
+          let folderId = "";
+          try {
+              const res = await fetch(GAS_URL, {
+                  method: "POST", headers: { "Content-Type": "text/plain" },
+                  body: JSON.stringify({ mode: "get_folder_id", reqUser: getUser(), password: getPass(), addr1, addr2, folderName, groupId })
+              });
+              const result = await res.json();
+              if(result.error) throw new Error(result.error);
+              folderId = result.folderId;
+          } catch(e) {
+              alert("フォルダの準備に失敗しました: " + e.message); return;
+          }
+
+          // 2. 取得したフォルダIDを使って、全ファイルを「同時（並列）」にアップロードする
+          listEl.innerHTML = `<div style='color:#1a73e8; text-align:center;'>${files.length}件のファイルを一斉送信中...</div>`;
+          
+          // 全てのアップロード処理を配列にまとめる
+          const uploadPromises = Array.from(files).map(file => {
+              return new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = async (e) => {
+                      try {
+                          await fetch(GAS_URL, {
+                              method: "POST", headers: { "Content-Type": "text/plain" },
+                              body: JSON.stringify({ mode: "upload_file_direct", reqUser: getUser(), password: getPass(), folderId: folderId, filename: file.name, data: e.target.result })
+                          });
+                      } catch(err) { console.error("Upload Error:", err); }
+                      resolve(); // 1ファイル完了
+                  };
+                  reader.readAsDataURL(file);
+              });
           });
+
+          // Promise.all で全ての同時アップロードが終わるのを待つ
+          await Promise.all(uploadPromises); 
+          await refreshFileList(); // 最後に一覧を更新
       }
+      // ▲ 追加ここまで ▲
 
       async function refreshFileList() {
           saveCurrentTabData();
@@ -1709,15 +1718,12 @@
                 map, 
                 markers: markersList, 
                 renderer: customClusterRenderer,
-                // ▼ ズームの最大拡大率をコントロールする部分の修正
                 onClusterClick: (event, cluster, map) => { 
                     const bounds = new google.maps.LatLngBounds(); 
                     cluster.markers.forEach(m => bounds.extend(m.position)); 
                     
-                    // paddingを多めに取ってゆとりを持たせます
                     map.fitBounds(bounds, { padding: 150 }); 
                     
-                    // アニメーション完了後に近すぎた場合は強制的にズームを20に戻します
                     google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
                         if (map.getZoom() > 20) {
                             map.setZoom(20); 
