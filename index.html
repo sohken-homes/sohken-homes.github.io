@@ -394,7 +394,7 @@
     <script>
       const API_KEY = "AIzaSyAbKkX5ZgodyzaDSNFi4ThojOSKzJsI4rQ";
       const MAP_ID = "972a8c0d85fc17958d06f4b1";
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbw91R5pXOMK5xYaxGbeOEXVl-fNjKtwoL8geNx9JEtbH5-vNbmSBfjq1oqxQhecfkF6/exec";
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbwZUEJtml0vlf91J_SeEL_5kBmAQ6JP6fz7CBhwJ2xjJ0Rz6VPtm2eMbAztLXzskBOh/exec";
       
       const getUser = () => sessionStorage.getItem("mapUserName") || "";
       const getPass = () => sessionStorage.getItem("mapPassword") || "";
@@ -707,7 +707,6 @@
           updateAttButtonUI(currentTabs[activeTabIndex].data.is_att);
       };
 
-      // ▼ 編集から閲覧モードへ確実に戻る機能（未保存警告あり）
       window.switchToView = () => {
           if (hasUnsavedChanges()) {
               if (!confirm("保存されていない変更があります。破棄して閲覧モードに戻りますか？")) return;
@@ -1133,7 +1132,6 @@
       dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
       document.getElementById('file-input').addEventListener('change', (e) => handleFiles(e.target.files));
 
-      // ▼ 【修正版】ファイルを並列で一斉アップロードする処理 ▼
       async function handleFiles(files) {
           saveCurrentTabData();
           const addr1 = currentTabs[0].data.addr1 || "";
@@ -1142,7 +1140,6 @@
           const groupId = currentTabs[0].data.id;
           const listEl = document.getElementById('file-list');
 
-          // 1. 最初にGASを呼び出して、フォルダIDを「1回だけ」取得（または作成）する
           listEl.innerHTML = "<div style='color:#1a73e8; text-align:center;'>フォルダを準備中...</div>" + listEl.innerHTML;
           let folderId = "";
           try {
@@ -1157,10 +1154,8 @@
               alert("フォルダの準備に失敗しました: " + e.message); return;
           }
 
-          // 2. 取得したフォルダIDを使って、全ファイルを「同時（並列）」にアップロードする
           listEl.innerHTML = `<div style='color:#1a73e8; text-align:center;'>${files.length}件のファイルを一斉送信中...</div>`;
           
-          // 全てのアップロード処理を配列にまとめる
           const uploadPromises = Array.from(files).map(file => {
               return new Promise((resolve) => {
                   const reader = new FileReader();
@@ -1171,17 +1166,15 @@
                               body: JSON.stringify({ mode: "upload_file_direct", reqUser: getUser(), password: getPass(), folderId: folderId, filename: file.name, data: e.target.result })
                           });
                       } catch(err) { console.error("Upload Error:", err); }
-                      resolve(); // 1ファイル完了
+                      resolve(); 
                   };
                   reader.readAsDataURL(file);
               });
           });
 
-          // Promise.all で全ての同時アップロードが終わるのを待つ
           await Promise.all(uploadPromises); 
-          await refreshFileList(); // 最後に一覧を更新
+          await refreshFileList(); 
       }
-      // ▲ 追加ここまで ▲
 
       async function refreshFileList() {
           saveCurrentTabData();
@@ -1407,6 +1400,12 @@
             const result = await res.json();
             if(result.error) throw new Error(result.error);
             
+            // ▼▼▼ 修正：保存が完了したら、再描画の前に仮マーカーを地図から削除する ▼▼▼
+            if (currentEditingMarker && !currentEditingMarker.rowIds) {
+                currentEditingMarker.map = null;
+            }
+            // ▲▲▲ 修正ここまで ▲▲▲
+
             await fetchMapData(); 
             
             let newMarker = null;
@@ -1414,7 +1413,6 @@
             if (!newMarker && activeLat && activeLng) newMarker = markersList.find(m => Math.abs(m.position.lat - activeLat) < 0.00001 && Math.abs(m.position.lng - activeLng) < 0.00001);
             if (newMarker) highlightMarker(newMarker);
             
-            // ▼ 保存が完了したら、未保存フラグをリセットして閲覧モードに切り替える
             originalEditDataString = null; 
             switchToView();
             
