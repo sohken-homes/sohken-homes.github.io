@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.0.26</title>
+    <title>不動産管理マップ v5.0.27</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -668,7 +668,7 @@
                   "登録業者名":"gyosha", "支店名":"shiten", "取引態様":"taiyou", "登録媒体":"media", "紹介担当者":"intro_user",
                   "建蔽率":"kenpei", "容積率":"youseki", "公法制限":"law", "接道":"road",
                   "路線":"train_line", "駅":"train_station", "駅からの徒歩":"train_walk", "備考（交通）":"train_memo",
-                  "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user",
+                  "参考URL1":"url1", "参考URL2":"url2", "メモ":"memo", "入力者":"user", "入力日":"input_date",
                   "購入価格":"siire_p", "仕入坪単価":"siire_unit", "仕入土地面積（㎡）":"siire_m2", "仕入土地面積（坪）":"siire_tsubo", "購入根拠":"siire_basis",
                   "ドライブURL":"drive_url", "マップURL":"map_url", "注目継続":"is_att"
               };
@@ -900,6 +900,18 @@
 
       function loadViewData(data) {
           const container = document.getElementById("view-container");
+          
+          // --- 年の抽出処理 ---
+          let regYear = "";
+          const extractY = (val) => {
+              if(!val) return "";
+              const d = new Date(val);
+              if(!isNaN(d)) return d.getFullYear();
+              const m = String(val).match(/^(\d{4})/);
+              return m ? m[1] : "";
+          };
+          regYear = extractY(data.d_first) || extractY(data.input_date);
+
           let prices = [];
           if(data.p_first) prices.push({p: data.p_first});
           if(data.p_c1) prices.push({p: data.p_c1});
@@ -956,8 +968,11 @@
               <div style="margin-bottom:10px;">
                   <span style="background:#e8eaed; color:#5f6368; padding:4px 8px; border-radius:4px; font-size:14px; font-weight:bold;">${data.type || "種別未定"}</span>
                   ${data.name ? `<div style="font-size:16px; font-weight:bold; margin-top:8px; color:#202124;">${data.name}</div>` : ""}
-                  <div style="font-size:12px; margin-top:4px;">
-                      📍 <a href="${mapLinkUrl}" target="_blank" style="color:#1a73e8; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${data.addr1||""}${data.addr2||""}${data.addr3||""}</a>
+                  <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:4px;">
+                      <div style="font-size:12px;">
+                          📍 <a href="${mapLinkUrl}" target="_blank" style="color:#1a73e8; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${data.addr1||""}${data.addr2||""}${data.addr3||""}</a>
+                      </div>
+                      ${regYear ? `<div style="font-size:16px; font-weight:bold; color:#202124; line-height:1;">${regYear}年登録</div>` : ""}
                   </div>
               </div>
               <div class="view-price-box">
