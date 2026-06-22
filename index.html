@@ -1438,4 +1438,463 @@
           else if (input.length === 8 && !isNaN(input)) { year = parseInt(input.substring(0,4), 10); month = parseInt(input.substring(4,6), 10); day = parseInt(input.substring(6,8), 10); }
           else { return input; }
           const d = new Date(year, month - 1, day);
-          if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() ===
+          if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+          else return ""; 
+      }
+
+      window.submitForm = async () => {
+        saveCurrentTabData(); 
+        const btn = document.querySelector(".btn-save"); btn.innerText = "保存中..."; btn.disabled = true;
+        isSaving = true;
+        document.getElementById("saving-overlay").style.display = "flex";
+        
+        const activeId = currentTabs[activeTabIndex]?.data?.id; 
+        const activeLat = currentTabs[activeTabIndex]?.data?.lat;
+        const activeLng = currentTabs[activeTabIndex]?.data?.lng;
+
+        try {
+            const fName = buildFolderName();
+            
+            const baseData = currentTabs[activeTabIndex].data;
+            const sharedKeys = ["lat", "lng", "name", "addr1", "addr2", "addr3", "gyosha", "shiten", "taiyou", "media", "intro_user", "kenpei", "youseki", "law", "road", "train_line", "train_station", "train_walk", "train_memo", "is_att"];
+            currentTabs.forEach(t => {
+                sharedKeys.forEach(k => { t.data[k] = baseData[k]; });
+            });
+
+            const payload = currentTabs.map(t => {
+                const dataCopy = { ...t.data };
+                dataCopy.folderName = fName;
+                dataCopy.map_url = `https://www.google.com/maps/search/?api=1&query=${dataCopy.lat},${dataCopy.lng}`;
+                return dataCopy;
+            });
+
+            const res = await fetch(GAS_URL, { 
+                method: "POST", headers: { "Content-Type": "text/plain" }, 
+                body: JSON.stringify({ mode: "save_multiple", reqUser: getUser(), password: getPass(), data: payload }) 
+            });
+            const result = await res.json();
+            if(result.error) throw new Error(result.error);
+            
+            // ▼▼▼ 修正：保存が完了したら、再描画の前に仮マーカーを地図から削除する ▼▼▼
+            if (currentEditingMarker && !currentEditingMarker.rowIds) {
+                currentEditingMarker.map = null;
+            }
+            // ▲▲▲ 修正ここまで ▲▲▲
+
+            await fetchMapData(); 
+            
+            let newMarker = null;
+            if (activeId) newMarker = markersList.find(m => m.rowIds && m.rowIds.includes(activeId));
+            if (!newMarker && activeLat && activeLng) newMarker = markersList.find(m => Math.abs(m.position.lat - activeLat) < 0.00001 && Math.abs(m.position.lng - activeLng) < 0.00001);
+            if (newMarker) highlightMarker(newMarker);
+            
+            originalEditDataString = null; 
+            switchToView();
+            
+        } catch (e) { 
+            if(e.message.includes("パスワードが正しくありません")) forceLogout();
+            else alert("保存失敗: " + e.message); 
+        } finally {
+            isSaving = false;
+            document.getElementById("saving-overlay").style.display = "none";
+            btn.disabled = false; btn.innerText = "保存"; 
+        }
+      };
+
+      window.executeSearch = () => {
+          const address = document.getElementById("address-input").value;
+          if(!address) return;
+          geocoder.geocode({ address: address }, (res, status) => {
+              if (status === "OK") { map.setCenter(res[0].geometry.location); map.setZoom(17); addNewProperty(res[0].geometry.location.lat(), res[0].geometry.location.lng()); }
+              else { alert("住所が見つかりませんでした"); }
+          });
+      };
+
+      window.deleteProperty = async () => {
+          if(!confirm("この区画/タブを削除しますか？")) return;
+          let shouldTrashFolder = false;
+          const driveUrl = currentTabs[activeTabIndex].data.drive_url; 
+          
+          if (driveUrl) {
+              if (confirm("【確認】\nGoogleドライブ上の関連ファイル(フォルダ)もゴミ箱に移動しますか？\n\n※他の区画とこのフォルダを共有している場合は「キャンセル」を選んでください。")) {
+                  shouldTrashFolder = true;
+              }
+          }
+
+          const btn = document.getElementById("delete-btn"); btn.innerText = "削除中..."; btn.disabled = true;
+          isSaving = true;
+          document.getElementById("saving-overlay").style.display = "flex";
+
+          try {
+              const res = await fetch(GAS_URL, { 
+                  method: "POST", headers: { "Content-Type": "text/plain" }, 
+                  body: JSON.stringify({
+                      id: document.getElementById("form-id").value, mode: "delete", trashFolder: shouldTrashFolder, reqUser: getUser(), password: getPass()
+                  }) 
+              });
+              const result = await res.json();
+              if(result.error) throw new Error(result.error);
+
+              if (result.warning) {
+                  alert("⚠️ 区画データは正常に削除されましたが、フォルダの自動削除に失敗しました。\n(お手数ですがGoogleドライブから手動で削除してください)\n\n原因: " + result.warning);
+              }
+
+              await fetchMapData(); closePanel(true);
+          } catch (e) { 
+              if(e.message.includes("パスワードが正しくありません")) forceLogout();
+              else alert("削除失敗: " + e.message); 
+          } finally {
+              isSaving = false;
+              document.getElementById("saving-overlay").style.display = "none";
+              btn.disabled = false; btn.innerText = "この区画を削除する"; 
+          }
+      };
+
+      async function processMissingCoords(missingRows) {
+          let updates = [];
+          for (let row of missingRows) {
+              const addr = (row["市・区"] || "") + (row["所在（丁目まで）"] || "") + (row["住居表示（丁目以降）"] || "");
+              if (addr) {
+                  try {
+                      const res = await new Promise((resolve, reject) => {
+                          geocoder.geocode({ address: addr }, (results, status) => {
+                              if (status === "OK") resolve(results[0].geometry.location);
+                              else reject(status);
+                          });
+                      });
+                      row["緯度"] = res.lat();
+                      row["経度"] = res.lng();
+                      updates.push({ id: row["ID"], lat: res.lat(), lng: res.lng() });
+                      await new Promise(r => setTimeout(r, 400));
+                  } catch(e) { console.warn("Geocode failed for: " + addr); }
+              }
+          }
+          if (updates.length > 0) {
+              fetch(GAS_URL, {
+                  method: "POST", headers: { "Content-Type": "text/plain" },
+                  body: JSON.stringify({ mode: "update_coords", reqUser: getUser(), password: getPass(), data: updates })
+              }).then(() => renderMarkers()).catch(()=>{});
+              renderMarkers();
+          }
+      }
+
+      async function fetchMapData() {
+        try {
+            const res = await fetch(GAS_URL, { 
+                method: "POST", headers: { "Content-Type": "text/plain" }, 
+                body: JSON.stringify({ mode: "get_all", reqUser: getUser(), password: getPass() }) 
+            }); 
+            const result = await res.json();
+            if(result.error) { 
+                if(result.error.includes("パスワードが正しくありません")) forceLogout();
+                else alert("データの読み込みに失敗しました：\n" + result.error); 
+                return; 
+            }
+            allData = result; 
+            
+            const missingCoords = allData.filter(r => !r["緯度"] || !r["経度"]);
+            if(missingCoords.length > 0) {
+                processMissingCoords(missingCoords);
+            }
+
+            const userSelect = document.getElementById('filter-user');
+            const currentUser = userSelect.value;
+            const users = new Set();
+            allData.forEach(row => {
+                if (row["入力者"]) users.add(row["入力者"].toString().trim());
+            });
+            let optionsHtml = `<option value="">全ての入力者</option>`;
+            Array.from(users).sort().forEach(u => {
+                if(u) optionsHtml += `<option value="${u}">${u}</option>`;
+            });
+            userSelect.innerHTML = optionsHtml;
+            userSelect.value = currentUser;
+            
+            renderMarkers(); 
+        } catch (e) { alert("通信エラーが発生しました。GASのURLが正しいか確認してください。"); }
+      }
+
+      const customClusterRenderer = {
+          render: ({ count, position, markers }) => {
+              const hasActive = currentEditingMarker && markers.includes(currentEditingMarker);
+              const hasAttention = markers.some(m => m.isAtt);
+
+              const div = document.createElement("div");
+              div.innerText = count; 
+
+              div.style.width = "36px";
+              div.style.height = "36px";
+              div.style.borderRadius = "50%";
+              div.style.display = "flex";
+              div.style.alignItems = "center";
+              div.style.justifyContent = "center";
+              div.style.fontSize = "14px";
+              div.style.fontWeight = "bold";
+              div.style.color = "white";
+
+              if (hasActive) {
+                  div.style.backgroundColor = "rgba(229, 57, 53, 0.9)";
+                  div.style.border = "2px solid white";
+                  div.style.boxShadow = "0 0 20px rgba(229, 57, 53, 0.9)";
+                  div.style.animation = "pulse 1s infinite";
+              } else if (hasAttention) {
+                  div.style.backgroundColor = "rgba(0, 91, 150, 0.8)";
+                  div.style.border = "2px solid white";
+                  div.style.outline = "4px solid rgba(26, 115, 232, 0.8)";
+                  div.style.outlineOffset = "2px"; 
+                  div.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
+              } else {
+                  div.style.backgroundColor = "rgba(0, 91, 150, 0.8)";
+                  div.style.border = "2px solid white";
+                  div.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
+              }
+
+              return new google.maps.marker.AdvancedMarkerElement({
+                  position,
+                  content: div,
+                  zIndex: hasActive ? 9999 : (hasAttention ? 9998 : 1000 + count)
+              });
+          }
+      };
+
+      function renderMarkers() {
+        if (clusterer) clusterer.clearMarkers();
+        markersList.forEach(m => m.map = null); markersList = [];
+        
+        const activeFilters = Array.from(document.querySelectorAll('.layer-cb:checked')).map(cb => cb.value);
+        const showSold = document.getElementById('layer-sold') ? document.getElementById('layer-sold').checked : false;
+        const onlyAtt = document.getElementById('layer-att') ? document.getElementById('layer-att').checked : false;
+        
+        const dateType = document.getElementById('filter-date-type').value;
+        const dateStart = document.getElementById('filter-date-start').value;
+        const dateEnd = document.getElementById('filter-date-end').value;
+        const filterUser = document.getElementById('filter-user').value;
+
+        const groups = {};
+        allData.forEach(row => {
+            if (!row["緯度"] || !row["経度"]) return; 
+            
+            const isSold = (row["成約フラグ"] === true || row["成約フラグ"] === "TRUE");
+            if (isSold && !showSold) return;
+
+            let isVisible = false;
+            const t = row["物件種別"] || "";
+            if (t.includes("情開")) isVisible = activeFilters.includes("自社（情開）");
+            else if (t.includes("自社")) isVisible = activeFilters.includes("自社物件");
+            else if (t.includes("MS")) isVisible = activeFilters.includes("MS");
+            else if (t.includes("査定")) isVisible = activeFilters.includes("査定");
+            else if (t === "新築戸建") isVisible = activeFilters.includes("新築戸建");
+            else if (t === "中古戸建") isVisible = activeFilters.includes("中古戸建");
+            else if (t === "売地") isVisible = activeFilters.includes("売地");
+            else isVisible = true;
+
+            if (!isVisible) return;
+
+            const isAtt = (row["注目継続"] === true || row["注目継続"] === "TRUE");
+            if (onlyAtt && !isAtt) return;
+
+            if (filterUser && row["入力者"] !== filterUser) return;
+
+            if (dateStart || dateEnd) {
+                let targetVal = row[dateType];
+                if (!targetVal) return; 
+                
+                let targetDate = new Date(targetVal);
+                if (isNaN(targetDate.getTime())) return;
+                targetDate.setHours(0,0,0,0);
+                
+                if (dateStart) {
+                    let s = new Date(dateStart);
+                    s.setHours(0,0,0,0);
+                    if (targetDate < s) return;
+                }
+                if (dateEnd) {
+                    let e = new Date(dateEnd);
+                    e.setHours(0,0,0,0);
+                    if (targetDate > e) return;
+                }
+            }
+
+            const key = `${Number(row["緯度"]).toFixed(6)}_${Number(row["経度"]).toFixed(6)}`;
+            if (!groups[key]) groups[key] = []; 
+            groups[key].push(row);
+        });
+
+        markersList = Object.keys(groups).map(key => {
+            const rows = groups[key]; const first = rows[0]; const ids = rows.map(r => r["ID"]).join(",");
+            const img = document.createElement("img");
+            
+            if (rows.length > 1) {
+                const allSold = rows.every(r => r["成約フラグ"] === true || r["成約フラグ"] === "TRUE");
+                const hasJishaNew = rows.some(r => r["物件種別"] === "自社新築");
+                const hasJishaNewInfo = rows.some(r => r["物件種別"] === "自社新築(情開)");
+                if (allSold) img.src = "https://sohken-homes.github.io/icon_town-sold.png";
+                else if (hasJishaNew) img.src = "https://sohken-homes.github.io/icon_jisha_new_town.png";
+                else if (hasJishaNewInfo) img.src = "https://sohken-homes.github.io/icon_jisha_new_info_town.png";
+                else img.src = "https://sohken-homes.github.io/icon_new_house_town.png";
+            } else { 
+                const isSold = (first["成約フラグ"] === true || first["成約フラグ"] === "TRUE");
+                const pType = first["物件種別"] || "";
+                
+                if (isSold) {
+                    if (["新築MS", "中古MS", "自社中古MS(情開)"].includes(pType)) {
+                        img.src = "https://sohken-homes.github.io/sold_ms.png";
+                    } else if (["売地", "自社売地", "自社売地(情開)"].includes(pType)) {
+                        img.src = "https://sohken-homes.github.io/sold_land.png";
+                    } else if (pType === "査定依頼") {
+                        img.src = "https://sohken-homes.github.io/sold_satei.png";
+                    } else if (pType === "査定依頼MS") {
+                        img.src = "https://sohken-homes.github.io/sold_satei_ms.png";
+                    } else {
+                        img.src = "https://sohken-homes.github.io/sold_house.png"; 
+                    }
+                } else {
+                    img.src = ICON_MAP[pType] || ICON_MAP["DEFAULT"];
+                }
+            }
+            img.style.width = "32px"; img.style.cursor = "pointer";
+            
+            const div = document.createElement("div");
+            div.style.position = "relative";
+            div.style.display = "inline-block";
+            div.appendChild(img);
+
+            const anyIsAtt = rows.some(r => r["注目継続"] === true || r["注目継続"] === "TRUE");
+            if(anyIsAtt) {
+                const ring = document.createElement("div");
+                ring.className = "attention-ring";
+                div.appendChild(ring);
+            }
+
+            const marker = new google.maps.marker.AdvancedMarkerElement({ position: { lat: Number(first["緯度"]), lng: Number(first["経度"]) }, map: map, content: div });
+            marker.rowIds = ids;
+            marker.isAtt = anyIsAtt; 
+            
+            div.addEventListener("click", (e) => {
+                e.stopPropagation(); 
+                if(isSaving || isDragging || dragLock) return; 
+                openView(marker.rowIds, marker);
+            });
+
+            div.addEventListener("dblclick", (e) => {
+                e.stopPropagation(); 
+                if(isSaving) return;
+                openView(marker.rowIds, marker);
+                setTimeout(() => switchToEdit(), 50);
+            });
+
+            return marker;
+        });
+
+        if (!clusterer) {
+            clusterer = new markerClusterer.MarkerClusterer({ 
+                map, 
+                markers: markersList, 
+                renderer: customClusterRenderer,
+                onClusterClick: (event, cluster, map) => { 
+                    const bounds = new google.maps.LatLngBounds(); 
+                    cluster.markers.forEach(m => bounds.extend(m.position)); 
+                    
+                    map.fitBounds(bounds, { padding: 150 }); 
+                    
+                    google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+                        if (map.getZoom() > 20) {
+                            map.setZoom(20); 
+                        }
+                    });
+                } 
+            });
+        } else { 
+            clusterer.addMarkers(markersList); 
+        }
+      }
+
+      window.addEventListener('load', () => {
+        document.getElementById('layer-all').addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('.layer-cb').forEach(cb => { cb.checked = isChecked; });
+            renderMarkers();
+        });
+
+        document.querySelectorAll('.layer-cb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const allCb = document.querySelectorAll('.layer-cb');
+                const checkedCb = document.querySelectorAll('.layer-cb:checked');
+                document.getElementById('layer-all').checked = (allCb.length === checkedCb.length);
+                renderMarkers();
+            });
+        });
+
+        if(document.getElementById('layer-sold')) document.getElementById('layer-sold').addEventListener('change', renderMarkers);
+        if(document.getElementById('layer-att')) document.getElementById('layer-att').addEventListener('change', renderMarkers);
+        
+        document.getElementById('filter-date-type').addEventListener('change', renderMarkers);
+        document.getElementById('filter-user').addEventListener('change', renderMarkers);
+        
+        ['filter-date-start', 'filter-date-end'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('blur', (e) => {
+                    e.target.value = formatToFullDate(e.target.value);
+                    renderMarkers();
+                });
+                el.addEventListener('keydown', (e) => {
+                    if(e.key === 'Enter') e.target.blur();
+                });
+            }
+        });
+        
+        document.getElementById('clear-date-btn').addEventListener('click', () => {
+            document.getElementById('filter-date-start').value = "";
+            document.getElementById('filter-date-end').value = "";
+            renderMarkers();
+        });
+
+        const container = document.getElementById("form-container");
+        container.addEventListener('input', (e) => {
+            if (e.target.classList.contains('only-num')) {
+                let val = e.target.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/，/g, ',').replace(/．/g, '.');
+                e.target.value = val.replace(/[^0-9\.\,]/g, '');
+            }
+        });
+        container.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault(); const inputs = Array.from(container.querySelectorAll('input, select, button'));
+                const index = inputs.indexOf(e.target); if (index > -1 && index < inputs.length - 1) inputs[index + 1].focus();
+            }
+        });
+        container.addEventListener('blur', (e) => {
+            if(e.target.classList.contains('area-input')) { e.target.value = formatAreaStrict(e.target.value); updateAutoFields(); } 
+            else if(e.target.classList.contains('comma-input')) { e.target.value = formatNumberWithComma(e.target.value); updateAutoFields(); }
+            if(e.target.classList.contains('date-input')) e.target.value = formatToFullDate(e.target.value);
+        }, true);
+        container.addEventListener('focus', (e) => {
+            if(e.target.classList.contains('comma-input') || e.target.classList.contains('area-input')) e.target.value = removeComma(e.target.value);
+        }, true);
+        
+        const autoFieldTriggers = ['form-type', 'form-p-first', 'form-p-c1', 'form-p-c2', 'form-p-c3', 'form-p-s', 'form-sub-price', 'form-t-tsubo', 'form-b-tsubo', 'siire-price', 'siire-m2'];
+        autoFieldTriggers.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) { el.addEventListener('input', updateAutoFields); el.addEventListener('change', updateAutoFields); }
+        });
+        
+        const syncArea = (m2Id, tsuboId) => {
+            const el = document.getElementById(m2Id);
+            if(el) { el.addEventListener('blur', (e) => {
+                const v = removeComma(e.target.value);
+                if(v) document.getElementById(tsuboId).value = formatAreaStrict((Math.floor((v * 0.3025) * 100) / 100).toFixed(2));
+                else document.getElementById(tsuboId).value = "";
+                updateAutoFields();
+            });}
+        };
+        syncArea('form-t-m2', 'form-t-tsubo'); syncArea('form-b-m2', 'form-b-tsubo'); syncArea('siire-m2', 'siire-tsubo');
+
+        const autoCheckSold = () => {
+            if (document.getElementById('form-d-s').value.trim() !== "" || document.getElementById('form-p-s').value.trim() !== "") document.getElementById('form-is-sold').checked = true;
+        };
+        document.getElementById('form-d-s').addEventListener('blur', autoCheckSold);
+        document.getElementById('form-p-s').addEventListener('blur', autoCheckSold); document.getElementById('form-p-s').addEventListener('input', autoCheckSold);
+      });
+    </script>
+</body>
+</html>
