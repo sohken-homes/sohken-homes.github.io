@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.1.07</title>
+    <title>不動産管理マップ v5.1.08</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -1104,16 +1104,21 @@
                   priceStr = `${formatNumberWithComma(priceVal)}万円`;
               }
               
-              return `<div style="margin-bottom: 4px;">「${label}」 ${dateStr} ${priceStr}</div>`;
+              // CSSのフレックスボックスで幅を固定して綺麗に揃える
+              return `<div style="display: flex; gap: 8px; margin-bottom: 4px;">
+                          <div style="white-space: pre;">${label}：</div>
+                          <div style="width: 85px;">${dateStr}</div>
+                          <div>${priceStr}</div>
+                      </div>`;
           };
 
           let priceHistoryHtml = "";
           // J列〜S列（初回入力〜成約情報）を飛び飛びでも一件ずつ確実に処理しつつ、ラベルを追加
           priceHistoryHtml += formatPriceHistoryItem("初回入力", data.d_first, data.p_first);
-          priceHistoryHtml += formatPriceHistoryItem("変更１", data.d_c1, data.p_c1);
-          priceHistoryHtml += formatPriceHistoryItem("変更２", data.d_c2, data.p_c2);
-          priceHistoryHtml += formatPriceHistoryItem("変更３", data.d_c3, data.p_c3);
-          priceHistoryHtml += formatPriceHistoryItem("成約", data.d_s, data.p_s);
+          priceHistoryHtml += formatPriceHistoryItem("変更１ ", data.d_c1, data.p_c1);
+          priceHistoryHtml += formatPriceHistoryItem("変更２ ", data.d_c2, data.p_c2);
+          priceHistoryHtml += formatPriceHistoryItem("変更３ ", data.d_c3, data.p_c3);
+          priceHistoryHtml += formatPriceHistoryItem("成約  ", data.d_s, data.p_s);
 
           // T列（価格推移備考）の追加表示（テキスト全体の折り返し対応）
           if (data.price_memo) {
