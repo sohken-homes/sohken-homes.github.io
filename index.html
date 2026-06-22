@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <title>不動産管理マップ v5.1.03</title>
+    <title>不動産管理マップ v5.1.04</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -973,7 +973,7 @@
               }
           }
 
-          let mapLinkUrl = `https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}`;
+          let mapLinkUrl = `https://www.google.com/maps?q=${data.lat},${data.lng}`;
           
           let html = `
               <div style="margin-bottom:10px;">
@@ -1077,15 +1077,34 @@
               html += `</div>`;
           }
 
-          // --- 価格推移詳細の表示処理（閲覧パネルの一番最後のかたまりに追加） ---
+          // --- 価格推移詳細の表示処理（改良版ロジック） ---
           const formatPriceHistoryItem = (dateVal, priceVal) => {
-              if (!dateVal || !priceVal) return "";
-              let dateStr = dateVal;
-              const m = String(dateVal).match(/^(\d{4})\/(\d{1,2})/);
-              if (m) {
-                  dateStr = `${m[1]}年${parseInt(m[2], 10)}月`;
+              // 日付も価格も両方空なら何も出力しない
+              if (!dateVal && !priceVal) return "";
+              
+              let dateStr = "日付未入力";
+              if (dateVal) {
+                  // YYYY/MM/DD や YYYY-MM-DD などの形式から年月を確実に抽出
+                  const m = String(dateVal).match(/^(\d{4})[-\/](\d{1,2})/);
+                  if (m) {
+                      dateStr = `${m[1]}年${parseInt(m[2], 10)}月`;
+                  } else {
+                      // ISO形式 (2025-08-16T15:00:00.000Z等) などのフォールバック
+                      const d = new Date(dateVal);
+                      if (!isNaN(d.getTime())) {
+                          dateStr = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+                      } else {
+                          dateStr = dateVal;
+                      }
+                  }
               }
-              return `<div style="margin-bottom: 4px;">${dateStr} ${formatNumberWithComma(priceVal)}万円</div>`;
+              
+              let priceStr = "価格未入力";
+              if (priceVal) {
+                  priceStr = `${formatNumberWithComma(priceVal)}万円`;
+              }
+              
+              return `<div style="margin-bottom: 4px;">${dateStr} ${priceStr}</div>`;
           };
 
           let priceHistoryHtml = "";
@@ -1131,7 +1150,6 @@
       function addTab() {
         saveCurrentTabData();
         const baseData = JSON.parse(JSON.stringify(currentTabs[0].data));
-        // ▼ 修正ポイント：タブ追加時にフロントエンド側で明示的にIDを生成してセットする
         baseData.id = generateUUID(); 
         baseData.tab_name = `区画${currentTabs.length + 1}`;
         ["p_first", "p_c1", "p_c2", "p_c3", "p_s", "t_m2", "t_tsubo", "b_m2", "b_tsubo", "layout", "sub_p", "is_sold", "d_first", "d_c1", "d_c2", "d_c3", "d_s", "user"].forEach(k => baseData[k] = "");
@@ -1464,7 +1482,7 @@
             const payload = currentTabs.map(t => {
                 const dataCopy = { ...t.data };
                 dataCopy.folderName = fName;
-                dataCopy.map_url = `https://www.google.com/maps/search/?api=1&query=${dataCopy.lat},${dataCopy.lng}`;
+                dataCopy.map_url = `https://www.google.com/maps?q=${dataCopy.lat},${dataCopy.lng}`;
                 return dataCopy;
             });
 
@@ -1475,11 +1493,9 @@
             const result = await res.json();
             if(result.error) throw new Error(result.error);
             
-            // ▼▼▼ 修正：保存が完了したら、再描画の前に仮マーカーを地図から削除する ▼▼▼
             if (currentEditingMarker && !currentEditingMarker.rowIds) {
                 currentEditingMarker.map = null;
             }
-            // ▲▲▲ 修正ここまで ▲▲▲
 
             await fetchMapData(); 
             
